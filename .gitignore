@@ -48,3 +48,17 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Downloaded data cache (see R/helpers.R)
+data/
+
+# Quarto
+/.quarto/
+/_site/
+*_files/
+/_freeze/
+
+**/*.quarto_ipynb
+
+# R graphics device output
+Rplots.pdf
