@@ -20,6 +20,9 @@ Imports:
     purrr,
     ggplot2,
     sf,
+    tibble,
+    egg,
+    cowplot,
     here,
     knitr,
     rmarkdown

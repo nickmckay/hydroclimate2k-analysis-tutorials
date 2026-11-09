@@ -22,7 +22,8 @@ for (repo in family) {
   remotes::install_github(repo, upgrade = "always", dependencies = TRUE)
 }
 
-cran <- c("dplyr", "tidyr", "purrr", "ggplot2", "sf", "knitr", "rmarkdown")
+cran <- c("dplyr", "tidyr", "purrr", "ggplot2", "sf", "tibble", "egg", "cowplot",
+          "knitr", "rmarkdown")
 missing <- cran[!vapply(cran, requireNamespace, logical(1), quietly = TRUE)]
 if (length(missing)) install.packages(missing)
 
