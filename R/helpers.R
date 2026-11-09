@@ -63,9 +63,13 @@ h2k_dir <- function(version = h2k_version) {
 #'
 #' The first call downloads the zip (about 280 MB) and reads it with
 #' `lipdR::readLipd()`, which takes a couple of minutes. The result is saved
-#' as an .rds file, so later calls take a few seconds.
+#' as an .rds file, so later calls take a few seconds. Updating lipdR to a new
+#' minor version (e.g. 0.8 to 0.9) reads the files again.
 getHydro2k <- function(version = h2k_version) {
-  rds <- file.path(h2k_data_dir, paste0("hydroclimate2k", version, ".rds"))
+  # readLipd() adds information as it reads (e.g. time scales since lipdR
+  # 0.8), so the cache is kept per lipdR version (major.minor)
+  lv <- paste(unlist(utils::packageVersion("lipdR"))[1:2], collapse = ".")
+  rds <- file.path(h2k_data_dir, paste0("hydroclimate2k", version, "-lipdR", lv, ".rds"))
   if (file.exists(rds)) {
     return(readRDS(rds))
   }
@@ -111,8 +115,9 @@ addAr6Region <- function(tib, regions = getAr6Regions()) {
 
 #' Stop early if an old version of the LiPD packages is installed.
 checkVersions <- function() {
-  need <- c(lipdR = "0.7.4", ens = "0.2.2", lipdViz = "0.2.0",
-            geoChronR = "2.0.0", compositeR = "0.5.0", actR = "0.4.0")
+  need <- c(lipdR = "0.8.3", ens = "0.2.2", lipdViz = "0.3.0",
+            agemodelR = "0.2.0", geoChronR = "2.0.0", compositeR = "0.6.0",
+            actR = "0.5.0")
   for (p in names(need)) {
     have <- tryCatch(utils::packageVersion(p), error = function(e) NULL)
     if (is.null(have) || have < need[[p]]) {
@@ -171,18 +176,26 @@ isMoisture <- function(variable) {
 }
 
 #' Keep the part of each record between two times (in the units of `time`,
-#' year CE for h2kTimeseries()). An `ageEnsemble` matrix, if there is one, is
-#' clipped to the same rows.
+#' year CE for h2kTimeseries()).
+#'
+#' Clips every column with one value per observation (the values, `time`,
+#' and its source column such as `year` or `age`, depth, ...), and the rows of
+#' ensemble matrices, so they all stay consistent.
 clipTime <- function(tib, from, to) {
-  hasEns <- "ageEnsemble" %in% names(tib)
+  listCols <- names(tib)[vapply(tib, is.list, logical(1))]
   for (i in seq_len(nrow(tib))) {
     tm <- as.numeric(tib$time[[i]])
+    n <- length(tm)
     keep <- !is.na(tm) & tm >= from & tm <= to
-    tib$time[[i]] <- tm[keep]
-    tib$paleoData_values[[i]] <- as.numeric(tib$paleoData_values[[i]])[keep]
-    if (hasEns && is.matrix(tib$ageEnsemble[[i]]) && nrow(tib$ageEnsemble[[i]]) == length(keep)) {
-      tib$ageEnsemble[[i]] <- tib$ageEnsemble[[i]][keep, , drop = FALSE]
+    for (col in listCols) {
+      x <- tib[[col]][[i]]
+      if (is.matrix(x) && nrow(x) == n) {
+        tib[[col]][[i]] <- x[keep, , drop = FALSE]
+      } else if (is.atomic(x) && !is.matrix(x) && length(x) == n && n > 1) {
+        tib[[col]][[i]] <- x[keep]
+      }
     }
+    tib$time[[i]] <- tm[keep]
   }
   tib
 }

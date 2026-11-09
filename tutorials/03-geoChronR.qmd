@@ -208,14 +208,16 @@ crevice$ageEnsembleUnits <- "yr BP"
 dim(lipdR::getTsTime(crevice, units = "CE"))
 ```
 
-This is what `compositeEnsembles()` does for every record. Then `sampleEnsembleThenBinTs()` picks a random column (one complete age model) each time it bins the record:
+`compositeEnsembles()` does this for every record. Its binning function, `sampleEnsembleThenBinTs()`, picks a random column (one complete age model) each time it bins the record. We can call it directly, and tell it to bin on the `ageEnsemble` column, converted to years CE:
 
 ```{r bin-draws, fig.height = 3.5}
 binvec <- seq(0, 2000, by = 20)
-crevice$time <- list(lipdR::getTsTime(crevice, units = "CE"))
 
 set.seed(1)
-draws <- replicate(20, compositeR::sampleEnsembleThenBinTs(crevice, binvec, ageVar = "time", defaultUnc = 0))
+draws <- replicate(20, compositeR::sampleEnsembleThenBinTs(crevice, binvec,
+                                                           time.variable = "ageEnsemble",
+                                                           time.units = "CE",
+                                                           defaultUnc = 0))
 
 tibble(year = rep(binvec[-1] - 10, 20), d18O = as.vector(draws), draw = rep(1:20, each = length(binvec) - 1)) |>
   ggplot(aes(year, d18O, group = draw)) +

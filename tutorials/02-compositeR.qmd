@@ -78,7 +78,7 @@ lipdViz::mapTs(recs, color = "archiveType", size = 4,
 The records are in different units (mm of streamflow, permil, tree-ring indices), some were dated in yr BP and some in years CE, and half of them point the "wrong" way. We don't need to fix any of this before compositing:
 
 - **Units:** the standardization step (below) puts every record in standard-deviation units, and we give the uncertainty in standard deviations too (`uncUnits = "sd"`).
-- **Time:** `compositeEnsembles()` reads each record's `time` and its metadata, and puts it on the scale given by `timeUnits`. Here that's `"CE"`, so `binvec` is in years CE. (The default is `"yr BP"`.)
+- **Time:** `compositeEnsembles()` reads each record's `time` and its scale, and puts it on the scale given by `time.units`. Here that's `"CE"`, so `binvec` is in years CE. (Without `time.units`, it uses the scale the records share, or yr BP if they differ.)
 - **Direction:** `compositeEnsembles()` flips records with a negative direction when `alignInterpDirection = TRUE` (the default), using `interpDirectionSign()`.
 
 It also takes the tibble directly. You can pass a lipdR timeseries list from `extractTs()` instead.
@@ -98,7 +98,7 @@ set.seed(2026)
 comp <- compositeEnsembles(recs,
                            binvec = binvec,
                            nens = 50,
-                           timeUnits = "CE",
+                           time.units = "CE",
                            uncVar = 0.5,
                            uncUnits = "sd",
                            stanFun = standardizeOverInterval,
@@ -155,7 +155,7 @@ by_archive <- purrr::map(c("Wood", "LakeSediment"), function(a) {
   ca <- compositeEnsembles(sub,
                            binvec = binvec,
                            nens = 50,
-                           timeUnits = "CE",
+                           time.units = "CE",
                            uncVar = 0.5,
                            uncUnits = "sd",
                            stanFun = standardizeOverInterval,

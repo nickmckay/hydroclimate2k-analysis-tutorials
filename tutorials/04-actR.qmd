@@ -78,12 +78,7 @@ summary(shifts)
 shift_plot <- plot(shifts)  # plot() draws the figure; assigning it avoids drawing it twice
 ```
 
-::: callout-warning
-## Shift directions with a year CE axis
-actR works out the direction of a shift (the bar colors and the `deltas` column) as if the time axis were age, where larger numbers are older. On a year CE axis that flips the sign: here the "negative" (blue) shifts, and the negative `deltas`, are steps *up* in d18O going forward in time. Check the direction against the record itself in the top panel.
-:::
-
-Comparing with the top panel, all three significant shifts are steps up in d18O, toward drier conditions: part of a long-term drying trend at Crevice Lake through the Holocene.
+All three significant shifts are positive (the `deltas` column, younger minus older segment means): steps up in d18O, toward drier conditions. They are part of a long-term drying trend at Crevice Lake through the Holocene.
 
 ::: callout-tip
 ## Using a real age ensemble
@@ -108,7 +103,7 @@ recs <- h2k |>
   mutate(paleoData_values = purrr::map2(paleoData_values, direction, `*`))
 ```
 
-Tree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with `ens::bin()`, which also puts trees and lakes on a comparable footing:
+Tree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with `ens::bin()`, which also puts trees and lakes on a comparable footing. `time` now holds the bin centers, so we set `timeVariableName` to `"time"`, telling lipdR that `time` is its own source and not a copy of `year` or `age` (see [tutorial 1](01-load-plot-map.qmd#time-axes)):
 
 ```{r bin}
 binvec <- seq(850, 1450, by = 10)
@@ -121,7 +116,8 @@ decadal <- function(time, vals) {
 binned <- purrr::map2(recs$time, recs$paleoData_values, decadal)
 recs <- recs |>
   mutate(time = purrr::map(binned, \(b) b[, 1]),
-         paleoData_values = purrr::map(binned, \(b) b[, 2])) |>
+         paleoData_values = purrr::map(binned, \(b) b[, 2]),
+         timeVariableName = "time") |>
   filter(purrr::map_int(paleoData_values, length) >= 30)   # at least 300 years of decades
 
 nrow(recs)

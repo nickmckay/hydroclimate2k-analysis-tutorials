@@ -156,17 +156,21 @@ mapTs(h2k, color = "archiveType", size = 3) +
 
 ## Time axes
 
-Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). `extractTs()` gives every timeseries a `time` column holding its primary time axis, and four fields that say what scale it is on:
+Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:
 
 - `timeUnits`: e.g. "yr AD", "yr BP" or "ka"
 - `timeDatum`: the year CE of time zero (0 for CE, 1950 for BP)
 - `timeDirection`: "prograde" if time counts forward (year CE), "retrograde" if it counts back (yr BP)
 - `timeExponent`: 0 for years, 3 for ka (thousands of years)
 
+`extractTs()` also gives every timeseries a `time` column: a copy of its primary time column, which `timeVariableName` names (usually `age` or `year`). `timeSource` says how its scale is known: from the file's metadata, from its units, or "assumed" when the units don't say.
+
 ```{r time-meta}
 h2k |>
-  count(timeUnits, timeDatum, timeDirection, timeExponent)
+  count(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)
 ```
+
+Those few "assumed" records have time units that lipdR doesn't recognize (for example "count/yr"), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it's worth checking.
 
 With this information, lipdR converts between any two scales. `convertTime()` converts numbers:
 
@@ -183,7 +187,12 @@ h2k_ce |>
   count(timeUnits)
 ```
 
-The original `age` and `year` columns stay as they were. lipdViz, compositeR and actR all read `time` and its metadata, so you usually don't need to convert anything yourself: you tell each function which scale you want (`time.units` or `timeUnits`). `h2kTimeseries()` in `R/helpers.R`, which the later tutorials use, returns every record with `time` in years CE.
+The original `age` and `year` columns stay as they were. lipdViz, compositeR and actR all read `time` and its scale, so you usually don't need to convert anything yourself: you tell each function which scale you want with `time.units`. They also take `time.variable`, to use another time column, such as `age` when `time` is `year`. `h2kTimeseries()` in `R/helpers.R`, which the later tutorials use, returns every record with `time` in years CE.
+
+::: callout-note
+## If you change `time`
+Because `time` is a copy of its source column, lipdR checks that they still agree. If you edit `time` but not the source column, `getTsTime()` (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (`clipTime()` in `R/helpers.R` clips every column), or set `timeVariableName` to `"time"`, which makes `time` its own source. [Tutorial 4](04-actR.qmd) does that after binning.
+:::
 
 ## Overview plots
 
@@ -216,7 +225,7 @@ It returns a ggplot2 object, so you can change the labels or theme as usual.
 
 ## Stacked timeseries plots
 
-`plotTimeseriesStack()` plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with `clipTime()` (from `R/helpers.R`). We use `h2k_ce`, so that every `time` is in years CE. Change `region` to any acronym from the table above.
+`plotTimeseriesStack()` plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with `clipTime()` (from `R/helpers.R`). We use `h2k_ce`, so that every `time` is in years CE. `plotTimeseriesStack()` plots `time` by default, and labels the axis from its scale. Change `region` to any acronym from the table above.
 
 ```{r stack, fig.height = 9}
 region <- "WNA"
@@ -231,10 +240,9 @@ stack <- h2k_ce |>
 nrow(stack)
 
 plotTimeseriesStack(stack,
-                    time.var = "time",
                     color.var = "archiveType",
                     lab.size = 2.5) +
-  labs(x = "Year (CE)", title = paste("Hydroclimate2k records in", region))
+  ggtitle(paste("Hydroclimate2k records in", region))
 ```
 
 ## Try this

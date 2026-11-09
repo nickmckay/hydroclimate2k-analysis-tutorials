@@ -8,13 +8,13 @@ Authors@R: person("Nicholas", "McKay", role = c("aut", "cre"),
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
-    lipdR (>= 0.7.4),
+    lipdR (>= 0.8.3),
     ens (>= 0.2.2),
-    lipdViz (>= 0.2.0),
-    agemodelR (>= 0.1.0),
+    lipdViz (>= 0.3.0),
+    agemodelR (>= 0.2.0),
     geoChronR (>= 2.0.0),
-    compositeR (>= 0.5.0),
-    actR (>= 0.4.0),
+    compositeR (>= 0.6.0),
+    actR (>= 0.5.0),
     dplyr,
     tidyr,
     purrr,

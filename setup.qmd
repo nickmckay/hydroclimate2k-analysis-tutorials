@@ -38,7 +38,7 @@ The script:
 3. downloads the Hydroclimate2k compilation (version 0.9.0, about 280 MB) and its BibTeX citations into `data/`, unzips and reads it, and saves a fast-loading `.rds` copy;
 4. downloads the IPCC AR6 reference regions.
 
-When it finishes it prints the package versions. You should see lipdR 0.7.4 or newer and geoChronR 2.0.0 or newer.
+When it finishes it prints the package versions. You should see lipdR 0.8.3 or newer and geoChronR 2.0.0 or newer.
 
 ::: callout-tip
 ## Installing from GitHub
@@ -69,7 +69,7 @@ D <- lipdR::readLipd("~/Downloads/hydroclimate2k0_9_0")
 | `hydroclimate2k0_9_0.zip` | The compilation as downloaded: one `.lpd` file per dataset |
 | `hydroclimate2k0_9_0/` | The unzipped `.lpd` files |
 | `hydroclimate2k-0_9_0.bib` | Citations for every dataset |
-| `hydroclimate2k0_9_0.rds` | The same data read into R, for fast loading |
+| `hydroclimate2k0_9_0-lipdR0.8.rds` | The same data read into R, for fast loading (one per lipdR version) |
 | `IPCC-WGI-reference-regions-v4.geojson` | IPCC AR6 reference regions (Iturbide et al., 2020) |
 
 The folder is ignored by git. Delete the `.rds` file to force a fresh read of the zip.
