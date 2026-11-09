@@ -1,0 +1,75 @@
+---
+title: "Before the workshop"
+subtitle: "Install the packages and download the data"
+---
+
+Do this at home or in the office, on a good connection. It takes 10 to 20 minutes, mostly package installation.
+
+## 1. Get the tutorials
+
+Either clone the repository:
+
+```bash
+git clone https://github.com/nickmckay/hydroclimate2k-analysis-tutorials.git
+```
+
+or [download it as a zip](https://github.com/nickmckay/hydroclimate2k-analysis-tutorials/archive/refs/heads/main.zip) and unzip it.
+
+Open `hydroclimate2k-analysis-tutorials.Rproj` in RStudio (or open the folder in Positron). Working inside the project matters: the helper functions use it to find the `data/` folder.
+
+## 2. Run the preflight script
+
+In R, from the project folder:
+
+```r
+source("R/preflight.R")
+```
+
+or in a terminal:
+
+```bash
+Rscript R/preflight.R
+```
+
+The script:
+
+1. installs or updates lipdR, ens, lipdViz, agemodelR, geoChronR, compositeR and actR from GitHub, plus a few CRAN packages (`sf`, `dplyr`, `ggplot2` and friends);
+2. checks that the versions are new enough;
+3. downloads the Hydroclimate2k compilation (version 0.9.0, about 280 MB) and its BibTeX citations into `data/`, unzips and reads it, and saves a fast-loading `.rds` copy;
+4. downloads the IPCC AR6 reference regions.
+
+When it finishes it prints the package versions. You should see lipdR 0.7.4 or newer and geoChronR 2.0.0 or newer.
+
+::: callout-tip
+## Installing from GitHub
+If `install_github()` complains about the GitHub API rate limit, create a personal access token with `usethis::create_github_token()` and store it with `gitcreds::gitcreds_set()`, then run the script again.
+
+On Windows you need [Rtools](https://cran.r-project.org/bin/windows/Rtools/) for packages that compile code.
+:::
+
+## If the data download fails
+
+The compilation lives at
+
+<https://lipdverse.org/export/downloads/hydroclimate2k/0_9_0/hydroclimate2k0_9_0.zip>
+
+If R cannot download it (this happened on some Windows machines in early November 2026, because of a certificate-revocation server outage), download it in your web browser and move it to the `data/` folder of the project, keeping the name `hydroclimate2k0_9_0.zip`. Then run the preflight script again. It will skip the download and read the file you saved.
+
+You can also read it without the helpers, from wherever you saved it. `readLipd()` doesn't open local zip files, so unzip it first:
+
+```r
+unzip("~/Downloads/hydroclimate2k0_9_0.zip", exdir = "~/Downloads/hydroclimate2k0_9_0")
+D <- lipdR::readLipd("~/Downloads/hydroclimate2k0_9_0")
+```
+
+## What ends up in `data/`
+
+| File | What it is |
+|---|---|
+| `hydroclimate2k0_9_0.zip` | The compilation as downloaded: one `.lpd` file per dataset |
+| `hydroclimate2k0_9_0/` | The unzipped `.lpd` files |
+| `hydroclimate2k-0_9_0.bib` | Citations for every dataset |
+| `hydroclimate2k0_9_0.rds` | The same data read into R, for fast loading |
+| `IPCC-WGI-reference-regions-v4.geojson` | IPCC AR6 reference regions (Iturbide et al., 2020) |
+
+The folder is ignored by git. Delete the `.rds` file to force a fresh read of the zip.

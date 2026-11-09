@@ -1,0 +1,55 @@
+project:
+  type: website
+  output-dir: _site
+  execute-dir: project
+  render:
+    - index.qmd
+    - setup.qmd
+    - tutorials/*.qmd
+
+website:
+  title: "Hydroclimate2k analysis tutorials"
+  repo-url: https://github.com/nickmckay/hydroclimate2k-analysis-tutorials
+  repo-actions: [source, issue]
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: setup.qmd
+        text: Before the workshop
+      - text: Tutorials
+        menu:
+          - href: tutorials/01-load-plot-map.qmd
+          - href: tutorials/02-compositeR.qmd
+          - href: tutorials/03-geoChronR.qmd
+          - href: tutorials/04-actR.qmd
+    right:
+      - icon: github
+        href: https://github.com/nickmckay/hydroclimate2k-analysis-tutorials
+  sidebar:
+    style: docked
+    contents:
+      - index.qmd
+      - setup.qmd
+      - section: Tutorials
+        contents: tutorials/*.qmd
+  page-footer:
+    center: "Data: [Hydroclimate2k on lipdverse.org](https://lipdverse.org/hydroclimate2k/). Packages: [LiPD family on GitHub](https://github.com/nickmckay/geoChronR)."
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    code-copy: true
+    code-tools: true
+    code-link: true
+    df-print: paged
+    fig-width: 8
+    fig-height: 5
+
+execute:
+  warning: false
+  message: false
+  freeze: false

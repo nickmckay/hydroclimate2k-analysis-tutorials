@@ -1,0 +1,33 @@
+Package: hydroclimate2kTutorials
+Title: Hydroclimate2k Analysis Tutorials
+Version: 0.1.0
+Description: Not a package. This file lists the R packages the tutorials
+    need, so that remotes::install_deps() and GitHub Actions can install them.
+Authors@R: person("Nicholas", "McKay", role = c("aut", "cre"),
+    email = "nick.mckay2@gmail.com")
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports:
+    lipdR (>= 0.7.4),
+    ens (>= 0.2.2),
+    lipdViz (>= 0.2.0),
+    agemodelR (>= 0.1.0),
+    geoChronR (>= 2.0.0),
+    compositeR (>= 0.5.0),
+    actR (>= 0.4.0),
+    dplyr,
+    tidyr,
+    purrr,
+    ggplot2,
+    sf,
+    here,
+    knitr,
+    rmarkdown
+Remotes:
+    nickmckay/lipdR,
+    nickmckay/ens,
+    nickmckay/lipdViz,
+    nickmckay/agemodelR,
+    nickmckay/geoChronR,
+    nickmckay/compositeR,
+    LinkedEarth/actR
