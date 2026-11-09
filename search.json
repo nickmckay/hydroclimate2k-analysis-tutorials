@@ -1,0 +1,544 @@
+[
+  {
+    "objectID": "tutorials/04-actR.html",
+    "href": "tutorials/04-actR.html",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "",
+    "text": "actR (Abrupt Change Toolkit in R) can ask two kinds of questions of paleoclimate records:\nactR will propagate uncertainty in the ages and the values with ensembles, and test results against null hypotheses: many surrogate series with the same spectral properties as the real record but no events. A result is significant if the real record shows the change more often than the surrogates do.\nWe’ll stay in western North America (AR6 region WNA) and:",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#setup",
+    "href": "tutorials/04-actR.html#setup",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "Setup",
+    "text": "Setup\n\nlibrary(actR)\nlibrary(dplyr)\nlibrary(ggplot2)\n\nsource(here::here(\"R/helpers.R\"))\ncheckVersions()\n\noptions(cli.progress_show_after = Inf)  # hide progress bars in the rendered page\n\nh2k &lt;- h2kTimeseries()",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#shifts-in-a-single-record",
+    "href": "tutorials/04-actR.html#shifts-in-a-single-record",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "Shifts in a single record",
+    "text": "Shifts in a single record\nCrevice Lake (Yellowstone) d18O covers the last 9,000 years. Larger d18O values mean less streamflow, so a step up means a shift to drier conditions.\n\ncrevice &lt;- h2k |&gt;\n  filter(dataSetName == \"LS08STCR\", paleoData_variableName == \"d18O\")\n\nlipdViz::mapTs(crevice, size = 4, lat.range = c(35, 55), lon.range = c(-125, -95))\n\n\n\n\n\n\n\n\ndetectShift() looks for changes in the mean with a changepoint algorithm (method = \"PELT\", from the changepoint package), on every member of an ensemble:\n\nsimulate.time.uncertainty and simulate.paleo.uncertainty build the ensemble by perturbing the ages and the values (paleo.uncertainty, in permil here).\nminimum.segment.length is the shortest stretch of time, in years, that counts as a segment. This sets the timescale of the shifts you can find.\nnull.hypothesis.n is the number of surrogate series used to judge significance.\n\nactR reads each record’s time and its metadata (see tutorial 1). time.units puts the axis on a chosen scale, here years CE, so that the results are in years CE whatever the record’s own units.\n\nset.seed(4)\nshifts &lt;- detectShift(crevice,\n                      time.units = \"CE\",\n                      vals.variable.name = \"d18O\",\n                      method = \"PELT\",\n                      minimum.segment.length = 500,\n                      simulate.time.uncertainty = TRUE,\n                      simulate.paleo.uncertainty = TRUE,\n                      paleo.uncertainty = 0.3,\n                      n.ens = 50,\n                      null.hypothesis.n = 50)\n\nKeep n.ens and null.hypothesis.n small while you explore (50 here), and use several hundred for results you’ll report.\nsummary() lists the shifts that are significant at the 0.05 level:\n\nsummary(shifts)\n\nLS08STCR - d18O: Shift in Mean results\nSearched for Shift in Mean with a minimum segment length of 500 years, summarizing the results over windows of 100 years (yr AD).\n\nOverall result: Detected 3 Shift in Mean event(s) that were significant at the alpha &lt; 0.05 level\n# A tibble: 3 × 4\n  time_start time_end pvalue deltas\n       &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;\n1       -852     -752 0       1.03 \n2      -4352    -4252 0.0200  0.995\n3        148      248 0.0400  1.60 \nTime uncertainty considered? TRUE Time ensemble generated in `propagateUncertainties()`)\nPaleo uncertainty considered? TRUE Values ensemble generated in `propagateUncertainties()`)\nError propagation ensemble members = 50\nNull hypothesis testing ensemble members = 50 \nMembers simulated using isospectral method\n\nParameter choices:\ncpt.fun = changepoint::cpt.mean\nminimum.segment.length = 500\nmethod = PELT\npenalty = MBIC\nncpts.max = Inf\n\n\nplot() shows the record and its ensemble (top) and, in each time bin, the fraction of ensemble members with a shift there (bottom). Bars beyond the orange lines (the 90th and 95th percentiles of the surrogates) are significant, and are drawn darker.\n\nshift_plot &lt;- plot(shifts)  # plot() draws the figure; assigning it avoids drawing it twice\n\n\n\n\n\n\n\n\nAll three significant shifts are positive (the deltas column, younger minus older segment means): steps up in d18O, toward drier conditions. They are part of a long-term drying trend at Crevice Lake through the Holocene.\n\n\n\n\n\n\nTipUsing a real age ensemble\n\n\n\nHere actR simulated age uncertainty. If you built an age ensemble in tutorial 3, put it in an ageEnsemble (yr BP) or yearEnsemble column of the tibble, and actR will use it instead.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#an-excursion-in-one-record",
+    "href": "tutorials/04-actR.html#an-excursion-in-one-record",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "An excursion in one record",
+    "text": "An excursion in one record\nThe tutorial 2 composite has a pronounced dry spell in the mid-1100s. Did a given record depart from its baseline then?\ndetectExcursion() compares an event window with reference windows on either side. An excursion is n.consecutive points in the event window beyond sig.num standard deviations from the reference mean.\nFirst, prepare the records. As in tutorial 2, choose the WNA moisture records and use compositeR::interpDirectionSign() to flip each one so that larger values mean wetter. That way a negative excursion always means drier.\n\nrecs &lt;- h2k |&gt;\n  filter(ar6_region == \"WNA\", isMoisture(interpretation1_variable)) |&gt;\n  mutate(direction = purrr::map_dbl(seq_len(n()), \\(i) compositeR::interpDirectionSign(pick(everything())[i, ]))) |&gt;\n  filter(!is.na(direction)) |&gt;\n  distinct(dataSetName, .keep_all = TRUE) |&gt;\n  clipTime(850, 1450) |&gt;\n  mutate(paleoData_values = purrr::map2(paleoData_values, direction, `*`))\n\nTree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with ens::bin(), which also puts trees and lakes on a comparable footing. time now holds the bin centers, so we set timeVariableName to \"time\", telling lipdR that time is its own source and not a copy of year or age (see tutorial 1):\n\nbinvec &lt;- seq(850, 1450, by = 10)\n\ndecadal &lt;- function(time, vals) {\n  b &lt;- ens::bin(time, vals, bin.vec = binvec)\n  b[is.finite(b[, 2]), , drop = FALSE]\n}\n\nbinned &lt;- purrr::map2(recs$time, recs$paleoData_values, decadal)\nrecs &lt;- recs |&gt;\n  mutate(time = purrr::map(binned, \\(b) b[, 1]),\n         paleoData_values = purrr::map(binned, \\(b) b[, 2]),\n         timeVariableName = \"time\") |&gt;\n  filter(purrr::map_int(paleoData_values, length) &gt;= 30)   # at least 300 years of decades\n\nnrow(recs)\n\n[1] 19\n\n\nNow test one record, the Beef Basin tree-ring streamflow reconstruction (Meko et al., 2007). The event window is 1120 to 1180 CE (event.yr = 1150, event.window = 60), and the reference windows are the 150 years on each side.\n\nbeef &lt;- filter(recs, dataSetName == \"BeefBasin.Meko.2007\")\n\nset.seed(4)\nexc &lt;- detectExcursion(beef,\n                       time.units = \"CE\",\n                       event.yr = 1150,\n                       event.window = 60,\n                       ref.window = 150,\n                       exc.type = \"negative\",\n                       sig.num = 1.5,\n                       n.consecutive = 2,\n                       min.vals = 5,\n                       simulate.time.uncertainty = FALSE,\n                       simulate.paleo.uncertainty = TRUE,\n                       paleo.uncertainty = 0.2,\n                       n.ens = 50,\n                       null.hypothesis.n = 50)\n\n\nsummary(exc)\n\nBeefBasin.Meko.2007 - tree-ring index: Excursion test results\nSearched for negative excursions in a 60 years window around 1150 yr AD, with reference windows of 150 years on either side.\n\nOverall result: Empirical p-value = 0\nTime uncertainty considered? FALSE\nPaleo uncertainty considered? TRUE\nParametric uncertainty considered? FALSE\nError propagation ensemble members = 50\nNull hypothesis testing ensemble members = 50\n\nParameter choices:\nsig.num = 1.5\nn.consecutive = 2\nexc.type = negative\nmin.vals = 5\nna.rm = TRUE\n\n\n\nplot(exc)\n\n\n\n\n\n\n\n\nThe red lines are the reference means and the thresholds (sig.num standard deviations). Points beyond the threshold in the event window count toward an excursion. event_probability is the fraction of ensemble members with an excursion, and the p-value compares it with the surrogates.\nWe don’t simulate age uncertainty here, since tree rings are precisely dated. For a lake or speleothem record, set simulate.time.uncertainty = TRUE or supply an age ensemble.\n\n\n\n\n\n\nNoteChoosing the windows\n\n\n\nmin.vals is the fewest points needed in each window. With decadal bins, a 60-year event window holds 6 points; a 40-year window holds only 4 and wouldn’t be tested at min.vals = 5. sig.num, n.consecutive and the windows can also be given as vectors, one value per ensemble member (e.g. sig.num = rnorm(50, 1.5, 0.1)), so that the choice of parameters becomes part of the uncertainty.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#the-same-test-across-the-region",
+    "href": "tutorials/04-actR.html#the-same-test-across-the-region",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "The same test across the region",
+    "text": "The same test across the region\nRun the same test on every record. split() turns the tibble into a list of one-row tibbles, and purrr::map() runs detectExcursion() on each. Records with too few points in the windows return no p-value.\n\nset.seed(4)\nevents &lt;- recs |&gt;\n  split(seq_len(nrow(recs))) |&gt;\n  purrr::map(\\(r) detectExcursion(r,\n                                  time.units = \"CE\",\n                                  event.yr = 1150,\n                                  event.window = 60,\n                                  ref.window = 150,\n                                  exc.type = \"negative\",\n                                  sig.num = 1.5,\n                                  n.consecutive = 2,\n                                  min.vals = 5,\n                                  simulate.time.uncertainty = FALSE,\n                                  simulate.paleo.uncertainty = TRUE,\n                                  paleo.uncertainty = 0.2,\n                                  n.ens = 50,\n                                  null.hypothesis.n = 50)) |&gt;\n  purrr::list_rbind() |&gt;\n  filter(!is.na(pvalue))\n\n\nevents |&gt;\n  as.data.frame() |&gt;\n  select(dataSetName, archiveType, event_probability, pvalue) |&gt;\n  arrange(pvalue)\n\n\n  \n\n\n\nIndividually, only a few records are significant. Many records weakly pointing the same way can still add up to strong evidence, and that’s what the next step tests.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#a-regional-significance-map",
+    "href": "tutorials/04-actR.html#a-regional-significance-map",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "A regional significance map",
+    "text": "A regional significance map\nspatialSigTest() combines the records near each point on a grid. It weights each record by its distance (zero beyond distance.cutoff), adds up their event probabilities, and compares the sum with the same sum for the surrogates (agg.method = \"robustNull\"). distanceGrid() sets up the grid and the distances.\n\nlon.range &lt;- c(-126, -100)\nlat.range &lt;- c(30, 50)\n\ngrid &lt;- distanceGrid(events, lon.range = lon.range, lat.range = lat.range, grid.resolution = 1)\n\npval_grid &lt;- purrr::map(grid,\n                        spatialSigTest,\n                        events = events,\n                        agg.method = \"robustNull\",\n                        use.weights = TRUE,\n                        distance.cutoff = 500)\n\nplotSignificance() maps the result. It returns a list, and the map is in $plot. Grid cells show the regional p-value for a negative (dry) excursion, more transparent where fewer records are nearby; points show each record’s own p-value.\n\nsig &lt;- plotSignificance(pval_grid,\n                        sigTestResults = events,\n                        which.test = \"pvalNeg\",\n                        color.breaks = c(0.01, 0.05, 0.1, 0.2),\n                        restrict.sites = TRUE,\n                        alpha.by.weight = TRUE,\n                        cutoff.distance = 500,\n                        x.lim = lon.range,\n                        y.lim = lat.range)\n\nsig$plot +\n  ggtitle(\"Dry excursion, 1120 to 1180 CE\") +\n  theme(plot.background = element_rect(fill = \"white\", colour = NA))\n\n\n\n\n\n\n\n\nThe mid-1100s drought is significant across the Colorado Plateau and the Four Corners, where several tree-ring records agree, but not in the north or along the coast.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/04-actR.html#try-this",
+    "href": "tutorials/04-actR.html#try-this",
+    "title": "4. Detecting abrupt change with actR",
+    "section": "Try this",
+    "text": "Try this\n\nTest the late-1500s megadrought: event.yr = 1585, with clipTime() and binvec adjusted to cover 1400 to 1800.\nUse exc.type = \"positive\" to look for wet excursions, or \"either\".\nChange distance.cutoff in spatialSigTest(). How sensitive is the map?\nGive sig.num and n.consecutive as vectors (one value per ensemble member) so that the parameter choices become part of the uncertainty.\nRun detectShift() on the tutorial 2 composite median, or on another long record such as Leviathan Cave (Leviathan.Lachniet.2014).",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "4. Detecting abrupt change with actR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html",
+    "href": "tutorials/02-compositeR.html",
+    "title": "2. Regional composites with compositeR",
+    "section": "",
+    "text": "A composite averages many records into one regional series. Done carefully, it keeps the shared signal, reduces the noise of individual records, and carries the uncertainties of the inputs through to the result. compositeR does this with ensembles: it repeats the whole bin, standardize and average procedure many times, each time drawing different age models and proxy values, so the spread of the results shows the uncertainty.\nHere we build a composite of moisture-sensitive records from the IPCC AR6 region WNA (western North America), for the Common Era. The region is set in one place, so you can rerun everything for another region.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#setup",
+    "href": "tutorials/02-compositeR.html#setup",
+    "title": "2. Regional composites with compositeR",
+    "section": "Setup",
+    "text": "Setup\n\nlibrary(lipdR)\nlibrary(compositeR)\nlibrary(dplyr)\nlibrary(ggplot2)\n\nsource(here::here(\"R/helpers.R\"))\ncheckVersions()\n\nregion &lt;- \"WNA\"\n\nh2kTimeseries() does the steps from tutorial 1 in one call: read the compilation, keep the 0.9.0 members, add AR6 regions, and put every record’s time in years CE.\n\nh2k &lt;- h2kTimeseries()\nnrow(h2k)\n\n[1] 716",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#choose-the-records",
+    "href": "tutorials/02-compositeR.html#choose-the-records",
+    "title": "2. Regional composites with compositeR",
+    "section": "Choose the records",
+    "text": "Choose the records\nA composite only makes sense if the records measure the same thing, and if they all point the same way. Hydroclimate2k records are interpreted as many different variables (precipitation, streamflow, P/E, PDSI, lake level, …), and a large value means “wetter” for some and “drier” for others. For example, lake-water d18O usually rises when evaporation exceeds precipitation.\nTwo pieces of metadata handle this. interpretation1_variable says what a record measures, and interpretation1_direction says whether larger values mean more or less of it.\nFirst, choose the records that measure moisture. isMoisture() (in R/helpers.R) is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:\n\nisMoisture(c(\"streamflow\", \"P/E\", \"precipitation\", \"temperature\", \"precipitationIsotope\", NA))\n\n[1]  TRUE  TRUE  TRUE FALSE FALSE FALSE\n\n\nThen the direction. compositeR::interpDirectionSign() reads a record’s interpretation direction and returns +1 if larger values mean more of the variable, -1 if they mean less, and NA if the direction is missing or ambiguous. It accepts “positive”/“negative” and “increase”/“decrease” in any capitalization.\nIdeally, all the directions would be “positive” or “negative”, a curation to-do.\nSelect the region’s moisture records, one per dataset, and keep the Common Era:\n\nrecs &lt;- h2k |&gt; #Start with the full tibble\n  filter(ar6_region == region) |&gt; #filter to this region\n  filter(isMoisture(interpretation1_variable)) |&gt; #keep records interpreted as moisture\n  mutate(direction = purrr::map_dbl(seq_len(n()), \\(i) compositeR::interpDirectionSign(pick(everything())[i, ]))) |&gt; #+1 or -1\n  filter(!is.na(direction)) |&gt; #drop records without a usable direction\n  distinct(dataSetName, .keep_all = TRUE) |&gt; #drop duplicates\n  clipTime(0, 2000) |&gt;\n  filter(purrr::map_int(time, length) &gt; 20) #only look at those with more than 20 datapoints in the interval\n\nrecs |&gt;\n  select(dataSetName, archiveType, paleoData_variableName,\n         interpretation1_variable, interpretation1_direction, direction)\n\n\n  \n\n\n\nRecords can carry several interpretations, each with a scope (climate, environment, isotope). interpDirectionSign() uses the climate-scoped one by default. Abbott.Hiner.2016 shows why that matters: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1.\n\n\n\n\n\n\nImportantLook at what you’re compositing\n\n\n\nisMoisture() is a convenience for handling our currently imperfect metadata. It’s not ideal. Read the table above, and check the interpretations of any record you aren’t sure about. Watch out for drought indices: “drought, positive” means larger values are drier, so isMoisture() leaves them out rather than let them point the wrong way.\n\n\n\nlipdViz::mapTs(recs, color = \"archiveType\", size = 4,\n               lat.range = c(25, 55), lon.range = c(-130, -100))",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#records-in-different-units",
+    "href": "tutorials/02-compositeR.html#records-in-different-units",
+    "title": "2. Regional composites with compositeR",
+    "section": "Records in different units",
+    "text": "Records in different units\nThe records are in different units (mm of streamflow, permil, tree-ring indices), some were dated in yr BP and some in years CE, and half of them point the “wrong” way. We don’t need to fix any of this before compositing:\n\nUnits: the standardization step (below) puts every record in standard-deviation units, and we give the uncertainty in standard deviations too (uncUnits = \"sd\").\nTime: compositeEnsembles() reads each record’s time and its scale, and puts it on the scale given by time.units. Here that’s \"CE\", so binvec is in years CE. (Without time.units, it uses the scale the records share, or yr BP if they differ.)\nDirection: compositeEnsembles() flips records with a negative direction when alignInterpDirection = TRUE (the default), using interpDirectionSign().\n\nIt also takes the tibble directly. You can pass a lipdR timeseries list from extractTs() instead.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#build-the-composite",
+    "href": "tutorials/02-compositeR.html#build-the-composite",
+    "title": "2. Regional composites with compositeR",
+    "section": "Build the composite",
+    "text": "Build the composite\ncompositeEnsembles() repeats these steps nens times:\n\nBin each record onto a common time axis (binvec). The default binFun, sampleEnsembleThenBinTs(), first perturbs each record: it adds autocorrelated noise to the values (uncVar = 0.5 with uncUnits = \"sd\": half of each record’s standard deviation, whatever its units), and it simulates age uncertainty with the Banded Age Model (BAM), except for tree rings and documents, whose ages are exact. Records with a negative interpretation direction are flipped at this step.\nStandardize the binned records with stanFun. Here standardizeOverInterval() gives every record mean 0 and standard deviation 1 over 1600 to 1950 CE, a period all the records cover.\nAverage the standardized records in each bin.\n\n\nbinvec &lt;- seq(0, 2000, by = 20)\n\nset.seed(2026)\ncomp &lt;- compositeEnsembles(recs,\n                           binvec = binvec,\n                           nens = 50,\n                           time.units = \"CE\",\n                           uncVar = 0.5,\n                           uncUnits = \"sd\",\n                           stanFun = standardizeOverInterval,\n                           interval = c(1600, 1950),\n                           verbose = FALSE)\n\nnens = 50 keeps this quick. Use several hundred for real work.\nThe standard deviation behind uncUnits = \"sd\" is the SD of each whole record, over the years we kept. A record with a large trend has a large SD, so it gets more noise. If you know a record’s measurement or calibration uncertainty, put it in a column and name that column in uncVar instead (in the record’s own units).\n\n\n\n\n\n\nNoteAbout the age uncertainty\n\n\n\nBAM was designed for layer-counted records, such as corals and varves. For radiometrically dated lake and speleothem records it gives only a rough idea of age uncertainty. If a record has an age ensemble (see tutorial 3), put it in an ageEnsemble column (yr BP, as a matrix), and compositeEnsembles() will draw from it instead.\nTree rings and historical documents are precisely dated, so their ages are used as they are. The exactAgeArchives argument of sampleEnsembleThenBinTs() controls which archive types this applies to.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#plot-it",
+    "href": "tutorials/02-compositeR.html#plot-it",
+    "title": "2. Regional composites with compositeR",
+    "section": "Plot it",
+    "text": "Plot it\nplotComposite() draws the composite’s ensemble as quantile ribbons, plus how many records contribute to each bin. The composite knows its time scale (comp$timeUnits), so plotComposite(comp) gives a forward year CE axis. Here we take the two panels separately (combine = FALSE), so that we can give them matching axes and labels:\n\npanels &lt;- plotComposite(comp, combine = FALSE)\n\nce_axis &lt;- scale_x_continuous(\"Year (CE)\", limits = c(0, 2000), expand = c(0, 0))\n\negg::ggarrange(\n  panels$compositeEns + ce_axis + labs(x = NULL, y = \"Moisture anomaly (SD)\") +\n    geom_hline(yintercept = 0, color = \"grey50\"),\n  panels$dataUsed + ce_axis,\n  ncol = 1, heights = c(2, 1),\n  top = paste(region, \"moisture composite\")\n)\n\n\n\n\n\n\n\n\nsummary() gives the composite’s quantiles in each bin:\n\ncomp_summary &lt;- summary(comp)\nhead(comp_summary)\n\n\n  \n\n\n\nNotice the droughts in the 1100s and in the late 1200s, and the wetter conditions before about 1100 CE. Western North America’s medieval megadroughts are well known from tree rings, and here lake records support them too. The uncertainty widens before 800 CE, where fewer records contribute.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#does-every-archive-agree",
+    "href": "tutorials/02-compositeR.html#does-every-archive-agree",
+    "title": "2. Regional composites with compositeR",
+    "section": "Does every archive agree?",
+    "text": "Does every archive agree?\nA useful check is to composite each archive on its own. If trees and lakes tell different stories, that is worth understanding before you trust the combined result.\n\nby_archive &lt;- purrr::map(c(\"Wood\", \"LakeSediment\"), function(a) {\n  sub &lt;- filter(recs, archiveType == a)\n  set.seed(2026)\n  ca &lt;- compositeEnsembles(sub,\n                           binvec = binvec,\n                           nens = 50,\n                           time.units = \"CE\",\n                           uncVar = 0.5,\n                           uncUnits = \"sd\",\n                           stanFun = standardizeOverInterval,\n                           interval = c(1600, 1950),\n                           verbose = FALSE)\n  s &lt;- summary(ca)\n  s$archive &lt;- paste0(a, \" (n = \", nrow(sub), \")\")\n  s\n}) |&gt;\n  bind_rows()\n\nbinning and aligning the data. This may take some time depending on the number of records (n = 17) and number of ensembles (n = 50)\nbinning and aligning the data. This may take some time depending on the number of records (n = 8) and number of ensembles (n = 50)\n\nnames(by_archive)[2:4] &lt;- c(\"lo\", \"med\", \"hi\")\n\nggplot(by_archive, aes(x = age, fill = archive, color = archive)) +\n  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.25, color = NA) +\n  geom_line(aes(y = med)) +\n  geom_hline(yintercept = 0, color = \"grey50\") +\n  scale_x_continuous(\"Year (CE)\", limits = c(0, 2000), expand = c(0, 0)) +\n  labs(y = \"Moisture anomaly (SD)\", fill = NULL, color = NULL) +\n  theme_bw() +\n  theme(legend.position = \"bottom\")",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "tutorials/02-compositeR.html#try-this",
+    "href": "tutorials/02-compositeR.html#try-this",
+    "title": "2. Regional composites with compositeR",
+    "section": "Try this",
+    "text": "Try this\n\nChange region at the top to another AR6 region (NWN, ENA, MED, EAS, …) and rerun everything. Check the record table first.\nUse stanFun = standardizeOverRandomInterval with duration = 300, searchRange = c(1000, 1950), which picks a different standardization window for each ensemble member, so that the choice of window becomes part of the uncertainty.\nTry samplePct = 0.75, which leaves out a random quarter of the records in each ensemble member (a jackknife).\nWeight records with weights = \"archiveType\", so that each archive type counts equally however many records it has.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "2. Regional composites with compositeR"
+    ]
+  },
+  {
+    "objectID": "setup.html",
+    "href": "setup.html",
+    "title": "Before the workshop",
+    "section": "",
+    "text": "Do this at home or in the office, on a good connection. It takes 10 to 20 minutes, mostly package installation.",
+    "crumbs": [
+      "Home",
+      "Before the workshop"
+    ]
+  },
+  {
+    "objectID": "setup.html#get-the-tutorials",
+    "href": "setup.html#get-the-tutorials",
+    "title": "Before the workshop",
+    "section": "1. Get the tutorials",
+    "text": "1. Get the tutorials\nEither clone the repository:\ngit clone https://github.com/nickmckay/hydroclimate2k-analysis-tutorials.git\nor download it as a zip and unzip it.\nOpen hydroclimate2k-analysis-tutorials.Rproj in RStudio (or open the folder in Positron). Working inside the project matters: the helper functions use it to find the data/ folder.",
+    "crumbs": [
+      "Home",
+      "Before the workshop"
+    ]
+  },
+  {
+    "objectID": "setup.html#run-the-preflight-script",
+    "href": "setup.html#run-the-preflight-script",
+    "title": "Before the workshop",
+    "section": "2. Run the preflight script",
+    "text": "2. Run the preflight script\nIn R, from the project folder:\nsource(\"R/preflight.R\")\nor in a terminal:\nRscript R/preflight.R\nThe script:\n\ninstalls or updates lipdR, ens, lipdViz, agemodelR, geoChronR, compositeR and actR from GitHub, plus a few CRAN packages (sf, dplyr, ggplot2 and friends);\nchecks that the versions are new enough;\ndownloads the Hydroclimate2k compilation (version 0.9.0, about 280 MB) and its BibTeX citations into data/, unzips and reads it, and saves a fast-loading .rds copy;\ndownloads the IPCC AR6 reference regions.\n\nWhen it finishes it prints the package versions. You should see lipdR 0.8.3 or newer and geoChronR 2.0.0 or newer.\n\n\n\n\n\n\nTipInstalling from GitHub\n\n\n\nIf install_github() complains about the GitHub API rate limit, create a personal access token with usethis::create_github_token() and store it with gitcreds::gitcreds_set(), then run the script again.\nOn Windows you need Rtools for packages that compile code.",
+    "crumbs": [
+      "Home",
+      "Before the workshop"
+    ]
+  },
+  {
+    "objectID": "setup.html#if-the-data-download-fails",
+    "href": "setup.html#if-the-data-download-fails",
+    "title": "Before the workshop",
+    "section": "If the data download fails",
+    "text": "If the data download fails\nThe compilation lives at\nhttps://lipdverse.org/export/downloads/hydroclimate2k/0_9_0/hydroclimate2k0_9_0.zip\nIf R cannot download it (this happened on some Windows machines in early November 2026, because of a certificate-revocation server outage), download it in your web browser and move it to the data/ folder of the project, keeping the name hydroclimate2k0_9_0.zip. Then run the preflight script again. It will skip the download and read the file you saved.\nYou can also read it without the helpers, from wherever you saved it. readLipd() doesn’t open local zip files, so unzip it first:\nunzip(\"~/Downloads/hydroclimate2k0_9_0.zip\", exdir = \"~/Downloads/hydroclimate2k0_9_0\")\nD &lt;- lipdR::readLipd(\"~/Downloads/hydroclimate2k0_9_0\")",
+    "crumbs": [
+      "Home",
+      "Before the workshop"
+    ]
+  },
+  {
+    "objectID": "setup.html#what-ends-up-in-data",
+    "href": "setup.html#what-ends-up-in-data",
+    "title": "Before the workshop",
+    "section": "What ends up in data/",
+    "text": "What ends up in data/\n\n\n\n\n\n\n\nFile\nWhat it is\n\n\n\n\nhydroclimate2k0_9_0.zip\nThe compilation as downloaded: one .lpd file per dataset\n\n\nhydroclimate2k0_9_0/\nThe unzipped .lpd files\n\n\nhydroclimate2k-0_9_0.bib\nCitations for every dataset\n\n\nhydroclimate2k0_9_0-lipdR0.8.rds\nThe same data read into R, for fast loading (one per lipdR version)\n\n\nIPCC-WGI-reference-regions-v4.geojson\nIPCC AR6 reference regions (Iturbide et al., 2020)\n\n\n\nThe folder is ignored by git. Delete the .rds file to force a fresh read of the zip.",
+    "crumbs": [
+      "Home",
+      "Before the workshop"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Hydroclimate2k analysis tutorials",
+    "section": "",
+    "text": "These tutorials show how to analyze the Hydroclimate2k compilation in R, using the LiPD family of packages. They were written for the Hydroclimate2k workshop at UBC, Vancouver (November 9 to 11, 2026), but work for anyone.\nEach tutorial runs from a fresh R session and reads the compilation from a local copy, so once you have run the setup step you can work offline.",
+    "crumbs": [
+      "Home",
+      "Hydroclimate2k analysis tutorials"
+    ]
+  },
+  {
+    "objectID": "index.html#start-here",
+    "href": "index.html#start-here",
+    "title": "Hydroclimate2k analysis tutorials",
+    "section": "Start here",
+    "text": "Start here\n\nFollow Before the workshop: install the packages and download the data (about 280 MB). Please do this before you arrive, because conference wifi will not cope with a room full of people downloading at once.\nWork through the tutorials in order. Tutorial 1 introduces the data and the helper functions the others use.",
+    "crumbs": [
+      "Home",
+      "Hydroclimate2k analysis tutorials"
+    ]
+  },
+  {
+    "objectID": "index.html#tutorials",
+    "href": "index.html#tutorials",
+    "title": "Hydroclimate2k analysis tutorials",
+    "section": "Tutorials",
+    "text": "Tutorials\n\n\n\n\nTutorial\nPackages\n\n\n\n\n1\nLoading, exploring, plotting and mapping\nlipdR, lipdViz\n\n\n2\nRegional composites\ncompositeR\n\n\n3\nAge uncertainty\ngeoChronR (agemodelR, ens, lipdViz)\n\n\n4\nDetecting abrupt change\nactR",
+    "crumbs": [
+      "Home",
+      "Hydroclimate2k analysis tutorials"
+    ]
+  },
+  {
+    "objectID": "index.html#the-packages",
+    "href": "index.html#the-packages",
+    "title": "Hydroclimate2k analysis tutorials",
+    "section": "The packages",
+    "text": "The packages\nThe LiPD family was reorganized and synchronized in November 2026. geoChronR is now a thin wrapper that loads four smaller packages:\n\n\n\nPackage\nWhat it does\n\n\n\n\nlipdR\nRead, write, extract and filter LiPD data\n\n\nens\nEnsembles, binning, time-axis conversion, age-uncertain correlation and regression\n\n\nlipdViz\nMaps and plots\n\n\nagemodelR\nAge models (Bacon, Bchron, BAM)\n\n\ngeoChronR\nLoads all four of the above\n\n\ncompositeR\nCompositing records into regional or global means\n\n\nactR\nShift and excursion detection\n\n\n\n\n\n\n\n\n\nWarningOld scripts may break\n\n\n\nYou need lipdR 0.8.3 or newer and geoChronR 2.0.0 or newer. lipdR 0.7 renamed the compilation fields (inCompilationBeta became inCompilation), added filterByCompilation(), and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check packageVersion(\"geoChronR\").\nlipdR 0.8 records the time scale (yr BP, ka, year CE, …) of every time column, and gives every timeseries a standard time column. lipdViz, compositeR and actR use it by default, and take time.units to choose the scale, so records dated in yr BP and in year CE can be plotted and analyzed together. Tutorial 1 explains how it works.",
+    "crumbs": [
+      "Home",
+      "Hydroclimate2k analysis tutorials"
+    ]
+  },
+  {
+    "objectID": "index.html#getting-help",
+    "href": "index.html#getting-help",
+    "title": "Hydroclimate2k analysis tutorials",
+    "section": "Getting help",
+    "text": "Getting help\nOpen an issue on this repository, or find Nick at the workshop.",
+    "crumbs": [
+      "Home",
+      "Hydroclimate2k analysis tutorials"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html",
+    "href": "tutorials/01-load-plot-map.html",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "",
+    "text": "This tutorial reads the Hydroclimate2k compilation into R, narrows it down to the records in the compilation, finds which IPCC AR6 region each record is in, and makes maps and timeseries plots. The later tutorials build on these steps.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#packages-and-helpers",
+    "href": "tutorials/01-load-plot-map.html#packages-and-helpers",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Packages and helpers",
+    "text": "Packages and helpers\n\nlibrary(lipdR)    # read, extract and filter LiPD data\nlibrary(lipdViz)  # maps and plots\nlibrary(dplyr)\nlibrary(ggplot2)\n\nsource(here::here(\"R/helpers.R\"))\ncheckVersions()\n\nR/helpers.R holds a few small functions shared by all the tutorials. checkVersions() stops with a message if any of the LiPD packages is too old.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#read-the-compilation",
+    "href": "tutorials/01-load-plot-map.html#read-the-compilation",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Read the compilation",
+    "text": "Read the compilation\nThe compilation is distributed as a zip file of LiPD files (one per dataset) on lipdverse.org. You can read it straight from the web:\n\noptions(timeout = 1800)  # it's about 280 MB, so allow more than R's default 60 s\nD &lt;- readLipd(\"https://lipdverse.org/export/downloads/hydroclimate2k/0_9_0/hydroclimate2k0_9_0.zip\")\n\nor from a copy you have downloaded. readLipd() can’t open a local zip file, so unzip it first and read the folder of .lpd files:\n\nunzip(\"data/hydroclimate2k0_9_0.zip\", exdir = \"data/hydroclimate2k0_9_0\")\nD &lt;- readLipd(\"data/hydroclimate2k0_9_0\")\n\nIn these tutorials we use getHydro2k(), which does all of this once (download, unzip, read) and keeps a fast-loading copy in data/:\n\nD &lt;- getHydro2k()\nlength(D)\n\n[1] 484\n\n\nD is a multi-LiPD object: a named list with one element per dataset. Each dataset holds its metadata (geo, pub, archiveType, …) and its data tables (paleoData, chronData).\n\nnames(D)[1:5]\n\n[1] \"AB08MEN01\"              \"Abbott.Hiner.2016\"      \"Akcakalecave.Jex.2011\" \n[4] \"AlbercaLake.Wogau.2019\" \"Altiplano.Morales.2012\"\n\nL &lt;- D[[1]]\nL$dataSetName\n\n[1] \"AB08MEN01\"\n\nL$archiveType\n\n[1] \"Coral\"\n\nL$geo$latitude\n\n[1] -0.13\n\nL$geo$longitude\n\n[1] 98.52",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#from-datasets-to-timeseries",
+    "href": "tutorials/01-load-plot-map.html#from-datasets-to-timeseries",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "From datasets to timeseries",
+    "text": "From datasets to timeseries\nMost analyses work on timeseries: one variable (a column of a data table) together with its time axis and all the metadata above it. extractTs() pulls every column out of every dataset, and ts2tibble() turns the result into a data frame, one row per timeseries.\n\nTS &lt;- extractTs(D)\nlength(TS)\n\n[1] 3947\n\nts_all &lt;- ts2tibble(TS)\ndim(ts_all)\n\n[1] 3947  722\n\n\nMost of those columns are not climate records: they are depths, ages, sample IDs, and variables that the curators did not choose for the compilation. Membership is recorded in each timeseries’ inCompilation fields, which list the compilations it belongs to and, for each, the versions it has been part of. filterByCompilation() keeps the members.\n\nfilterByCompilation(ts_all, \"hydroclimate2k\") |&gt; nrow()\n\n[1] 717\n\n\nThat includes a timeseries that was in earlier versions but left the compilation. To get exactly the members of the version we downloaded, give the version too. Versions are written with underscores, as in the file names (h2k_version is \"0_9_0\"):\n\nh2k &lt;- filterByCompilation(ts_all, \"hydroclimate2k\",\n                           version = h2k_version, version.op = \"==\") |&gt;\n  tibble::as_tibble()\nnrow(h2k)\n\n[1] 716\n\n\n\n\n\n\n\n\nWarningUse underscores in the version\n\n\n\nversion = \"0.9.0\" (with dots) currently matches nothing and returns an empty table without an error. Use \"0_9_0\".\n\n\nThe tibble::as_tibble() at the end turns lipdR’s timeseries tibble into a plain tibble, which prints more compactly and works with all of dplyr.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#a-first-look",
+    "href": "tutorials/01-load-plot-map.html#a-first-look",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "A first look",
+    "text": "A first look\nCount records by archive type:\n\nh2k |&gt;\n  count(archiveType, sort = TRUE)\n\n\n  \n\n\n\nWhat variables and interpretations are there? interpretation1_variable is the climate variable the authors interpret the record as, and interpretation1_direction says whether larger values mean more or less of it.\n\nh2k |&gt;\n  count(paleoData_variableName, sort = TRUE) |&gt;\n  head(15)\n\n\n  \n\n\nh2k |&gt;\n  count(interpretation1_variable, interpretation1_direction, sort = TRUE) |&gt;\n  head(15)\n\n\n  \n\n\n\nqueryTs() and filterTs() select timeseries with a simple expression, for example filterTs(TS, \"archiveType == Speleothem\"). With a tibble, dplyr::filter() does the same job, and that is what we use here.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#ipcc-ar6-regions",
+    "href": "tutorials/01-load-plot-map.html#ipcc-ar6-regions",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "IPCC AR6 regions",
+    "text": "IPCC AR6 regions\nNone of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so R/helpers.R provides two helpers: getAr6Regions() reads the region polygons, and addAr6Region() adds the region of each record with a point-in-polygon test (sf).\n\nregions &lt;- getAr6Regions()\nh2k &lt;- addAr6Region(h2k, regions)\n\nh2k |&gt;\n  count(ar6_region, ar6_name, sort = TRUE) |&gt;\n  head(15)\n\n\n  \n\n\n\nWhich regions have both lake and speleothem records?\n\nh2k |&gt;\n  filter(!is.na(ar6_region)) |&gt;\n  count(ar6_region, archiveType) |&gt;\n  tidyr::pivot_wider(names_from = archiveType, values_from = n, values_fill = 0) |&gt;\n  arrange(desc(rowSums(across(where(is.numeric)))))",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#maps",
+    "href": "tutorials/01-load-plot-map.html#maps",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Maps",
+    "text": "Maps\nmapTs() maps a set of timeseries, colored by any column. Here we color by archive type.\n\nmapTs(h2k, color = \"archiveType\", size = 3)\n\n\n\n\n\n\n\n\nmapLipd() maps datasets instead of timeseries:\n\nmapLipd(D, size = 3, label.site = FALSE)\n\n\n\n\n\n\n\n\nBoth return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region’s boundaries fall:\n\nmapTs(h2k, color = \"archiveType\", size = 3) +\n  geom_sf(data = regions, inherit.aes = FALSE, fill = NA, color = \"grey40\", linewidth = 0.2)",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#time-axes",
+    "href": "tutorials/01-load-plot-map.html#time-axes",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Time axes",
+    "text": "Time axes\nHydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:\n\ntimeUnits: e.g. “yr AD”, “yr BP” or “ka”\ntimeDatum: the year CE of time zero (0 for CE, 1950 for BP)\ntimeDirection: “prograde” if time counts forward (year CE), “retrograde” if it counts back (yr BP)\ntimeExponent: 0 for years, 3 for ka (thousands of years)\n\nextractTs() also gives every timeseries a time column: a copy of its primary time column, which timeVariableName names (usually age or year). timeSource says how its scale is known: from the file’s metadata, from its units, or “assumed” when the units don’t say.\n\nh2k |&gt;\n  count(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)\n\n\n  \n\n\n\nThose few “assumed” records have time units that lipdR doesn’t recognize (for example “count/yr”), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it’s worth checking.\nWith this information, lipdR converts between any two scales. convertTime() converts numbers:\n\nconvertTime(c(0, 50, 1000, 1950), from = \"yr BP\", to = \"CE\")\n\n[1] 1950 1900  950    0\n\nconvertTime(c(1.2, 4.2), from = \"ka\", to = \"CE\")\n\n[1]   750 -2250\n\n\nand convertTsTime() converts the time of every record, and updates the metadata:\n\nh2k_ce &lt;- convertTsTime(h2k, \"CE\")\nh2k_ce |&gt;\n  count(timeUnits)\n\n\n  \n\n\n\nThe original age and year columns stay as they were. lipdViz, compositeR and actR all read time and its scale, so you usually don’t need to convert anything yourself: you tell each function which scale you want with time.units. They also take time.variable, to use another time column, such as age when time is year. h2kTimeseries() in R/helpers.R, which the later tutorials use, returns every record with time in years CE.\n\n\n\n\n\n\nNoteIf you change time\n\n\n\nBecause time is a copy of its source column, lipdR checks that they still agree. If you edit time but not the source column, getTsTime() (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (clipTime() in R/helpers.R clips every column), or set timeVariableName to \"time\", which makes time its own source. Tutorial 4 does that after binning.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#overview-plots",
+    "href": "tutorials/01-load-plot-map.html#overview-plots",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Overview plots",
+    "text": "Overview plots\nplotTimeAvailabilityTs() shows how many records cover each time, grouped by archive. It puts every record on the scale given by time.units, here years CE:\n\nplotTimeAvailabilityTs(h2k, time.units = \"CE\", age.range = c(0, 2020), step = 10)\n\n\n\n\n\n\n\n\nplotSummaryTs() combines the map and the availability plot:\n\nsummary_plot &lt;- plotSummaryTs(h2k, time.units = \"CE\", age.range = c(0, 2020), step = 10, size = 3)\n\n\n\n\n\n\n\n\nplotSummaryTs() draws the figure as it runs. We assign the result so R doesn’t also print a description of it.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#plot-one-record",
+    "href": "tutorials/01-load-plot-map.html#plot-one-record",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Plot one record",
+    "text": "Plot one record\nplotTs() plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:\n\nrec &lt;- h2k |&gt;\n  filter(dataSetName == \"Abbott.Hiner.2016\", paleoData_variableName == \"%sand\")\n\nplotTs(rec, time.units = \"CE\", secondary.axis = TRUE)\n\n\n\n\n\n\n\n\nIt returns a ggplot2 object, so you can change the labels or theme as usual.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#stacked-timeseries-plots",
+    "href": "tutorials/01-load-plot-map.html#stacked-timeseries-plots",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Stacked timeseries plots",
+    "text": "Stacked timeseries plots\nplotTimeseriesStack() plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with clipTime() (from R/helpers.R). We use h2k_ce, so that every time is in years CE. plotTimeseriesStack() plots time by default, and labels the axis from its scale. Change region to any acronym from the table above.\n\nregion &lt;- \"WNA\"\n\nstack &lt;- h2k_ce |&gt;\n  filter(ar6_region == region, !is.na(interpretation1_variable)) |&gt;\n  distinct(dataSetName, .keep_all = TRUE) |&gt;\n  clipTime(0, 2020) |&gt;\n  filter(purrr::map_int(time, length) &gt; 20) |&gt;\n  arrange(archiveType)\n\nnrow(stack)\n\n[1] 30\n\nplotTimeseriesStack(stack,\n                    color.var = \"archiveType\",\n                    lab.size = 2.5) +\n  ggtitle(paste(\"Hydroclimate2k records in\", region))",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/01-load-plot-map.html#try-this",
+    "href": "tutorials/01-load-plot-map.html#try-this",
+    "title": "1. Loading, exploring, plotting and mapping",
+    "section": "Try this",
+    "text": "Try this\n\nMap only one archive type, or color the map by interpretation1_variable.\nPick another AR6 region and make its stack plot.\nUse filterByCompilation() with a version to compare membership between versions.\nD[[\"&lt;dataSetName&gt;\"]] gets one dataset by name. Try getTables() on its paleoData to see all its measurement tables.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "1. Loading, exploring, plotting and mapping"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html",
+    "href": "tutorials/03-geoChronR.html",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "",
+    "text": "Most Hydroclimate2k records from lakes, speleothems and marine sediments are dated by radiocarbon or U/Th, and their time axes come from an age model. If we want to incorporate age uncertainty into our analyses, geoChronR can help with this.\ngeoChronR handles this with age ensembles: many plausible age models (typically 1000), each a potential time axis for the record. Any analysis run on every ensemble member gives a distribution of results instead of a single answer.\nIn this tutorial we:\nThe example is Crevice Lake, Yellowstone National Park (LS08STCR; Stevens and Dean, 2008). Its calcite d18O is interpreted as a record of streamflow (larger values, less streamflow), and it is one of the records in the WNA composite in tutorial 2.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#setup",
+    "href": "tutorials/03-geoChronR.html#setup",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Setup",
+    "text": "Setup\nlibrary(geoChronR) loads the whole family: lipdR, ens, lipdViz and agemodelR.\n\nlibrary(geoChronR)\nlibrary(dplyr)\nlibrary(ggplot2)\n\nsource(here::here(\"R/helpers.R\"))\ncheckVersions()\n\nD &lt;- getHydro2k()\nL &lt;- D[[\"LS08STCR\"]]\nL$geo$siteName\n\n[1] \"Crevice\"",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#what-dating-information-is-there",
+    "href": "tutorials/03-geoChronR.html#what-dating-information-is-there",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "What dating information is there?",
+    "text": "What dating information is there?\nDating information lives in chronData, separate from the proxy data in paleoData. Each chronData can hold measurement tables (the dates themselves) and models (age models built from them).\n\nchron &lt;- lipdR::getMeasurementTables(L,pc = \"chron\") \n  \nchron[[1]]\n\n\n  \n\n\n\nThere are 12 radiocarbon dates and one calendar age, the 7,627 yr BP tephra at 313 cm (most likely the Mazama ash).\n\n\n\n\n\n\nTipExploring a dataset\n\n\n\nlipdR::getTables(L,pc = \"chron) return the tables as data frames. In an interactive session, selectData(L) with no var.name lists every variable and asks you to pick one.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#the-age-ensemble-that-came-with-the-dataset",
+    "href": "tutorials/03-geoChronR.html#the-age-ensemble-that-came-with-the-dataset",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "The age ensemble that came with the dataset",
+    "text": "The age ensemble that came with the dataset\nThis dataset already includes an age model with a 1,000-member ensemble:\n\nexisting &lt;- L$chronData[[1]]$model[[1]]$ensembleTable[[1]]\ndim(existing$ageEnsemble$values)   # depths x ensemble members\n\n[1]  102 1000\n\nexisting$ageEnsemble$units\n\n[1] \"yr BP\"\n\n\nplotChronEns() shows the ensemble against depth: the median (black), quantile ribbons (grey), a few individual ensemble members (red), and the probability distributions of the dates (purple).\n\nplotChronEns(L, model.num = 1, truncate.dist = 1e-4) +\n  ggtitle(\"Crevice Lake: age model from the dataset\")",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#build-a-new-age-model-with-bchron",
+    "href": "tutorials/03-geoChronR.html#build-a-new-age-model-with-bchron",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Build a new age model with Bchron",
+    "text": "Build a new age model with Bchron\nYou’ll often want to build your own model: to use updated calibration curves, change assumptions, or because the dataset has dates but no model. agemodelR runs Bacon, Bchron, BAM and OxCal on LiPD data. Here we use Bchron, which is quick and runs anywhere.\nFirst, a constraint for the core top. The original age model puts the sediment surface (0 cm) at 1993 CE, which is -43 yr BP. Without a surface age, Bchron extrapolates freely above the shallowest date at 20 cm, and the youngest samples end up with ages in the future. We might want to add that the LiPD file, but for now we add the surface age as a calendar date with a small uncertainty:\n\nchron &lt;- L$chronData[[1]]$measurementTable[[1]]\nfor (v in names(chron)) {\n  if (is.list(chron[[v]]) && !is.null(chron[[v]]$values)) {\n    chron[[v]]$values &lt;- c(NA, chron[[v]]$values)\n  }\n}\nchron$depth$values[1] &lt;- 0\nchron$age$values[1] &lt;- -43     # 1993 CE\nchron$`SD-1`$values[1] &lt;- 5\nL$chronData[[1]]$measurementTable[[1]] &lt;- chron\n\nNow run Bchron. Giving all the arguments explicitly lets it run without asking questions. Rows with a radiocarbon age are calibrated with IntCal20, and rows with only a calendar age (our core top and the tephra) are treated as calendar ages. We store the result as model 2, so the original model stays in place.\n\nset.seed(2026)\nL &lt;- runBchron(L,\n               chron.num = 1,\n               meas.table.num = 1,\n               model.num = 2,\n               cal.curves = \"intcal20\",\n               iter = 10000,\n               ask = FALSE,\n               lab.id.var = \"labID\",\n               age.14c.var = \"age14C\",\n               age.14c.uncertainty.var = \"SD\",\n               age.var = \"age\",\n               age.uncertainty.var = \"SD-1\",\n               depth.var = \"depth\",\n               reservoir.age.14c.var = NULL,\n               reservoir.age.14c.uncertainty.var = NULL,\n               rejected.ages.var = NULL)\n\nThis takes a few minutes. When you’re experimenting, lower iter (with ask = FALSE) to make it faster.\n\nplotChronEns(L, model.num = 2, truncate.dist = 1e-4) +\n  ggtitle(\"Crevice Lake: new Bchron age model\")",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#put-the-ensemble-on-the-proxy-data",
+    "href": "tutorials/03-geoChronR.html#put-the-ensemble-on-the-proxy-data",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Put the ensemble on the proxy data",
+    "text": "Put the ensemble on the proxy data\nThe age model gives ages at a regular set of depths. mapAgeEnsembleToPaleoData() interpolates every ensemble member to the depths of the d18O samples and adds an ageEnsemble column to the paleo measurement table.\n\nL &lt;- mapAgeEnsembleToPaleoData(L,\n                               age.var = \"ageEnsemble\",\n                               chron.num = 1, model.num = 2,\n                               paleo.num = 1, paleo.meas.table.num = 1)\n\nselectData() pulls a variable out of a table, together with its units and metadata:\n\nageEns  &lt;- selectData(L, var.name = \"ageEnsemble\", paleo.or.chron.num = 1, meas.table.num = 1)\nd18O    &lt;- selectData(L, var.name = \"d18O\",        paleo.or.chron.num = 1, meas.table.num = 1)\nyearPub &lt;- selectData(L, var.name = \"year\",        paleo.or.chron.num = 1, meas.table.num = 1)\n\n\ndim(ageEns$values)   # samples x ensemble members\n\n[1]  277 1000\n\nageEns$units\n\n[1] \"yr BP\"\n\n\nThe ensemble is in yr BP. convertBP2AD() converts it to years CE, using year CE = 1950 - yr BP:\n\nyearEns &lt;- convertBP2AD(ageEns)\nyearEns$units\n\n[1] \"AD\"",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#plot-the-record-with-its-age-uncertainty",
+    "href": "tutorials/03-geoChronR.html#plot-the-record-with-its-age-uncertainty",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Plot the record with its age uncertainty",
+    "text": "Plot the record with its age uncertainty\nplotTimeseriesEnsRibbons() shows the spread of the ensemble as quantile ribbons, and plotTimeseriesEnsLines() adds a few individual members. Here we also add the published time axis (blue) and an axis in yr BP on top.\n\nplotTimeseriesEnsRibbons(X = yearEns, Y = d18O, n.bins = 400) |&gt;\n  plotTimeseriesEnsLines(X = yearEns, Y = d18O, n.ens.plot = 5, color = \"Reds\", alp = 0.4) +\n  geom_line(aes(x = yearPub$values, y = d18O$values), color = \"blue\", linewidth = 0.4) +\n  scale_x_continuous(\"Year (CE)\", sec.axis = sec_axis(~ 1950 - ., name = \"Age (yr BP)\")) +\n  labs(y = \"d18O (permil)\", title = \"Crevice Lake d18O with age uncertainty\") +\n  theme_bw() +\n  theme(legend.position = \"none\")\n\n\n\n\n\n\n\n\nZoom in on the Common Era:\n\nplotTimeseriesEnsRibbons(X = yearEns, Y = d18O, n.bins = 400) |&gt;\n  plotTimeseriesEnsLines(X = yearEns, Y = d18O, n.ens.plot = 5, color = \"Reds\", alp = 0.4) +\n  geom_line(aes(x = yearPub$values, y = d18O$values), color = \"blue\", linewidth = 0.4) +\n  scale_x_continuous(\"Year (CE)\", sec.axis = sec_axis(~ 1950 - ., name = \"Age (yr BP)\")) +\n  coord_cartesian(xlim = c(0, 2000), ylim = c(-10.5, -4.5)) +\n  labs(y = \"d18O (permil)\") +\n  theme_bw() +\n  theme(legend.position = \"none\")\n\n\n\n\n\n\n\n\nHow uncertain is the age of each sample? The width of the 95% range of the ensemble:\n\ntibble(year = apply(yearEns$values, 1, median, na.rm = TRUE),\n       width = apply(yearEns$values, 1, \\(x) diff(quantile(x, c(0.025, 0.975), na.rm = TRUE)))) |&gt;\n  ggplot(aes(year, width)) +\n  geom_line() +\n  labs(x = \"Year (CE, ensemble median)\", y = \"95% age range (years)\") +\n  theme_bw()\n\n\n\n\n\n\n\n\nAges are best constrained near the dates and worst where dates are far apart. The 133 cm gap between the dates at 122 and 255 cm leaves the middle Holocene uncertain by more than 2,000 years. In the Common Era the 95% range is about 200 to 500 years, which is enough to blur the timing of century-scale events. Compare the binned draws below.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#use-the-ensemble-in-a-composite",
+    "href": "tutorials/03-geoChronR.html#use-the-ensemble-in-a-composite",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Use the ensemble in a composite",
+    "text": "Use the ensemble in a composite\ncompositeR and actR use an age ensemble whenever a record has one. In tutorial 2 every record had a single time axis, so compositeR simulated age uncertainty with BAM. To use the Bchron ensemble instead, put the matrix (in yr BP) in the record’s ageEnsemble column:\n\nh2k &lt;- h2kTimeseries()\n\ncrevice &lt;- h2k |&gt; filter(dataSetName == \"LS08STCR\", paleoData_variableName == \"d18O\")\nnrow(crevice)\n\n[1] 1\n\nlength(crevice$time[[1]]) == nrow(ageEns$values)\n\n[1] TRUE\n\ncrevice$ageEnsemble &lt;- list(ageEns$values)\ncrevice$ageEnsembleUnits &lt;- \"yr BP\"\n\nlipdR::getTsTime() returns a record’s time axis on any scale. When there is an age ensemble it returns that, as a matrix:\n\ndim(lipdR::getTsTime(crevice, units = \"CE\"))\n\n[1]  277 1000\n\n\ncompositeEnsembles() does this for every record. Its binning function, sampleEnsembleThenBinTs(), picks a random column (one complete age model) each time it bins the record. We can call it directly, and tell it to bin on the ageEnsemble column, converted to years CE:\n\nbinvec &lt;- seq(0, 2000, by = 20)\n\nset.seed(1)\ndraws &lt;- replicate(20, compositeR::sampleEnsembleThenBinTs(crevice, binvec,\n                                                           time.variable = \"ageEnsemble\",\n                                                           time.units = \"CE\",\n                                                           defaultUnc = 0))\n\ntibble(year = rep(binvec[-1] - 10, 20), d18O = as.vector(draws), draw = rep(1:20, each = length(binvec) - 1)) |&gt;\n  ggplot(aes(year, d18O, group = draw)) +\n  geom_line(alpha = 0.3) +\n  labs(x = \"Year (CE)\", y = \"d18O (permil)\", title = \"20 binned draws from the age ensemble\") +\n  theme_bw()\n\n\n\n\n\n\n\n\nTo use it in tutorial 2’s composite, add the ageEnsemble column to the Crevice Lake row of h2k before selecting and clipping the records (clipTime() clips the ensemble too), and the composite carries the radiocarbon-based age uncertainty instead of the BAM approximation.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  },
+  {
+    "objectID": "tutorials/03-geoChronR.html#try-this",
+    "href": "tutorials/03-geoChronR.html#try-this",
+    "title": "3. Age uncertainty with geoChronR",
+    "section": "Try this",
+    "text": "Try this\n\nPlot the original ensemble (model 1) and the new one (model 2) on the same axes. Where do they differ, and why might they?\nRerun Bchron without the core-top constraint and look at the youngest samples.\nBuild a Bacon model with runBacon(). It is slower, but it models changes in accumulation rate.\nPick another lake from the WNA table in tutorial 2, check its chronData, and build its age model.\nens has age-uncertain correlation (corEns()) and regression (regressEns()). Try correlating Crevice Lake with a nearby tree-ring streamflow record.",
+    "crumbs": [
+      "Home",
+      "Tutorials",
+      "3. Age uncertainty with geoChronR"
+    ]
+  }
+]
