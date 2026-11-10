@@ -577,15 +577,16 @@ ncpts.max = Inf</code></pre>
 <h2 class="anchored" data-anchor-id="an-excursion-in-one-record">An excursion in one record</h2>
 <p>The tutorial 2 composite has a pronounced dry spell in the mid-1100s. Did a given record depart from its baseline then?</p>
 <p><code>detectExcursion()</code> compares an <strong>event window</strong> with <strong>reference windows</strong> on either side. An excursion is <code>n.consecutive</code> points in the event window beyond <code>sig.num</code> standard deviations from the reference mean.</p>
-<p>First, prepare the records. As in tutorial 2, choose the WNA moisture records and use <code>compositeR::interpDirectionSign()</code> to flip each one so that larger values mean wetter. That way a <em>negative</em> excursion always means <em>drier</em>.</p>
+<p>First, prepare the records. As in tutorial 2, choose the WNA moisture records with <code>lipdR::filterByInterpretation()</code>, and use <code>compositeR::interpDirectionSign()</code> to flip each one so that larger values mean wetter. That way a <em>negative</em> excursion always means <em>drier</em>.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> <span class="st">"WNA"</span>, <span class="fu">isMoisture</span>(interpretation1_variable)) <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">850</span>, <span class="dv">1450</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map2</span>(paleoData_values, direction, <span class="st">`</span><span class="at">*</span><span class="st">`</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> <span class="st">"WNA"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  lipdR<span class="sc">::</span><span class="fu">filterByInterpretation</span>(<span class="fu">isMoisture</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>, <span class="at">match =</span> <span class="st">"primary"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">850</span>, <span class="dv">1450</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map2</span>(paleoData_values, direction, <span class="st">`</span><span class="at">*</span><span class="st">`</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Tree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with <code>ens::bin()</code>, which also puts trees and lakes on a comparable footing. <code>time</code> now holds the bin centers, so we set <code>timeVariableName</code> to <code>"time"</code>, telling lipdR that <code>time</code> is its own source and not a copy of <code>year</code> or <code>age</code> (see <a href="../tutorials/01-load-plot-map.html#time-axes">tutorial 1</a>):</p>
 <div class="cell">
@@ -1439,157 +1440,158 @@ na.rm = TRUE</code></pre>
 <span id="cb18-91"><a href="#cb18-91" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-92"><a href="#cb18-92" aria-hidden="true" tabindex="-1"></a><span class="in">`detectExcursion()`</span> compares an **event window** with **reference windows** on either side. An excursion is <span class="in">`n.consecutive`</span> points in the event window beyond <span class="in">`sig.num`</span> standard deviations from the reference mean.</span>
 <span id="cb18-93"><a href="#cb18-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-94"><a href="#cb18-94" aria-hidden="true" tabindex="-1"></a>First, prepare the records. As in tutorial 2, choose the WNA moisture records and use <span class="in">`compositeR::interpDirectionSign()`</span> to flip each one so that larger values mean wetter. That way a *negative* excursion always means *drier*.</span>
+<span id="cb18-94"><a href="#cb18-94" aria-hidden="true" tabindex="-1"></a>First, prepare the records. As in tutorial 2, choose the WNA moisture records with <span class="in">`lipdR::filterByInterpretation()`</span>, and use <span class="in">`compositeR::interpDirectionSign()`</span> to flip each one so that larger values mean wetter. That way a *negative* excursion always means *drier*.</span>
 <span id="cb18-95"><a href="#cb18-95" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-96"><a href="#cb18-96" aria-hidden="true" tabindex="-1"></a><span class="in">```{r prepare}</span></span>
 <span id="cb18-97"><a href="#cb18-97" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
-<span id="cb18-98"><a href="#cb18-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> <span class="st">"WNA"</span>, <span class="fu">isMoisture</span>(interpretation1_variable)) <span class="sc">|&gt;</span></span>
-<span id="cb18-99"><a href="#cb18-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span></span>
-<span id="cb18-100"><a href="#cb18-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span></span>
-<span id="cb18-101"><a href="#cb18-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-102"><a href="#cb18-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">850</span>, <span class="dv">1450</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-103"><a href="#cb18-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map2</span>(paleoData_values, direction, <span class="st">`</span><span class="at">*</span><span class="st">`</span>))</span>
-<span id="cb18-104"><a href="#cb18-104" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-105"><a href="#cb18-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-106"><a href="#cb18-106" aria-hidden="true" tabindex="-1"></a>Tree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with <span class="in">`ens::bin()`</span>, which also puts trees and lakes on a comparable footing. <span class="in">`time`</span> now holds the bin centers, so we set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, telling lipdR that <span class="in">`time`</span> is its own source and not a copy of <span class="in">`year`</span> or <span class="in">`age`</span> (see <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](01-load-plot-map.qmd#time-axes)</span>):</span>
-<span id="cb18-107"><a href="#cb18-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-108"><a href="#cb18-108" aria-hidden="true" tabindex="-1"></a><span class="in">```{r bin}</span></span>
-<span id="cb18-109"><a href="#cb18-109" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">850</span>, <span class="dv">1450</span>, <span class="at">by =</span> <span class="dv">10</span>)</span>
-<span id="cb18-110"><a href="#cb18-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-111"><a href="#cb18-111" aria-hidden="true" tabindex="-1"></a>decadal <span class="ot">&lt;-</span> <span class="cf">function</span>(time, vals) {</span>
-<span id="cb18-112"><a href="#cb18-112" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">&lt;-</span> ens<span class="sc">::</span><span class="fu">bin</span>(time, vals, <span class="at">bin.vec =</span> binvec)</span>
-<span id="cb18-113"><a href="#cb18-113" aria-hidden="true" tabindex="-1"></a>  b[<span class="fu">is.finite</span>(b[, <span class="dv">2</span>]), , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb18-114"><a href="#cb18-114" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-115"><a href="#cb18-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-116"><a href="#cb18-116" aria-hidden="true" tabindex="-1"></a>binned <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map2</span>(recs<span class="sc">$</span>time, recs<span class="sc">$</span>paleoData_values, decadal)</span>
-<span id="cb18-117"><a href="#cb18-117" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> recs <span class="sc">|&gt;</span></span>
-<span id="cb18-118"><a href="#cb18-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time =</span> purrr<span class="sc">::</span><span class="fu">map</span>(binned, \(b) b[, <span class="dv">1</span>]),</span>
-<span id="cb18-119"><a href="#cb18-119" aria-hidden="true" tabindex="-1"></a>         <span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map</span>(binned, \(b) b[, <span class="dv">2</span>]),</span>
-<span id="cb18-120"><a href="#cb18-120" aria-hidden="true" tabindex="-1"></a>         <span class="at">timeVariableName =</span> <span class="st">"time"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-121"><a href="#cb18-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(paleoData_values, length) <span class="sc">&gt;=</span> <span class="dv">30</span>)   <span class="co"># at least 300 years of decades</span></span>
-<span id="cb18-122"><a href="#cb18-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-123"><a href="#cb18-123" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(recs)</span>
-<span id="cb18-124"><a href="#cb18-124" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-125"><a href="#cb18-125" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-126"><a href="#cb18-126" aria-hidden="true" tabindex="-1"></a>Now test one record, the Beef Basin tree-ring streamflow reconstruction (Meko et al., 2007). The event window is 1120 to 1180 CE (<span class="in">`event.yr = 1150`</span>, <span class="in">`event.window = 60`</span>), and the reference windows are the 150 years on each side.</span>
-<span id="cb18-127"><a href="#cb18-127" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-128"><a href="#cb18-128" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion, results = "hide"}</span></span>
-<span id="cb18-129"><a href="#cb18-129" aria-hidden="true" tabindex="-1"></a>beef <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, dataSetName <span class="sc">==</span> <span class="st">"BeefBasin.Meko.2007"</span>)</span>
-<span id="cb18-130"><a href="#cb18-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-131"><a href="#cb18-131" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
-<span id="cb18-132"><a href="#cb18-132" aria-hidden="true" tabindex="-1"></a>exc <span class="ot">&lt;-</span> <span class="fu">detectExcursion</span>(beef,</span>
-<span id="cb18-133"><a href="#cb18-133" aria-hidden="true" tabindex="-1"></a>                       <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb18-134"><a href="#cb18-134" aria-hidden="true" tabindex="-1"></a>                       <span class="at">event.yr =</span> <span class="dv">1150</span>,</span>
-<span id="cb18-135"><a href="#cb18-135" aria-hidden="true" tabindex="-1"></a>                       <span class="at">event.window =</span> <span class="dv">60</span>,</span>
-<span id="cb18-136"><a href="#cb18-136" aria-hidden="true" tabindex="-1"></a>                       <span class="at">ref.window =</span> <span class="dv">150</span>,</span>
-<span id="cb18-137"><a href="#cb18-137" aria-hidden="true" tabindex="-1"></a>                       <span class="at">exc.type =</span> <span class="st">"negative"</span>,</span>
-<span id="cb18-138"><a href="#cb18-138" aria-hidden="true" tabindex="-1"></a>                       <span class="at">sig.num =</span> <span class="fl">1.5</span>,</span>
-<span id="cb18-139"><a href="#cb18-139" aria-hidden="true" tabindex="-1"></a>                       <span class="at">n.consecutive =</span> <span class="dv">2</span>,</span>
-<span id="cb18-140"><a href="#cb18-140" aria-hidden="true" tabindex="-1"></a>                       <span class="at">min.vals =</span> <span class="dv">5</span>,</span>
-<span id="cb18-141"><a href="#cb18-141" aria-hidden="true" tabindex="-1"></a>                       <span class="at">simulate.time.uncertainty =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb18-142"><a href="#cb18-142" aria-hidden="true" tabindex="-1"></a>                       <span class="at">simulate.paleo.uncertainty =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-143"><a href="#cb18-143" aria-hidden="true" tabindex="-1"></a>                       <span class="at">paleo.uncertainty =</span> <span class="fl">0.2</span>,</span>
-<span id="cb18-144"><a href="#cb18-144" aria-hidden="true" tabindex="-1"></a>                       <span class="at">n.ens =</span> <span class="dv">50</span>,</span>
-<span id="cb18-145"><a href="#cb18-145" aria-hidden="true" tabindex="-1"></a>                       <span class="at">null.hypothesis.n =</span> <span class="dv">50</span>)</span>
-<span id="cb18-146"><a href="#cb18-146" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-147"><a href="#cb18-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-148"><a href="#cb18-148" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion-summary}</span></span>
-<span id="cb18-149"><a href="#cb18-149" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(exc)</span>
-<span id="cb18-150"><a href="#cb18-150" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-151"><a href="#cb18-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-152"><a href="#cb18-152" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion-plot, fig.height = 4}</span></span>
-<span id="cb18-153"><a href="#cb18-153" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(exc)</span>
-<span id="cb18-154"><a href="#cb18-154" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-155"><a href="#cb18-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-156"><a href="#cb18-156" aria-hidden="true" tabindex="-1"></a>The red lines are the reference means and the thresholds (<span class="in">`sig.num`</span> standard deviations). Points beyond the threshold in the event window count toward an excursion. <span class="in">`event_probability`</span> is the fraction of ensemble members with an excursion, and the p-value compares it with the surrogates.</span>
-<span id="cb18-157"><a href="#cb18-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-158"><a href="#cb18-158" aria-hidden="true" tabindex="-1"></a>We don't simulate age uncertainty here, since tree rings are precisely dated. For a lake or speleothem record, set <span class="in">`simulate.time.uncertainty = TRUE`</span> or supply an age ensemble.</span>
-<span id="cb18-159"><a href="#cb18-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-160"><a href="#cb18-160" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
-<span id="cb18-161"><a href="#cb18-161" aria-hidden="true" tabindex="-1"></a><span class="fu">## Choosing the windows</span></span>
-<span id="cb18-162"><a href="#cb18-162" aria-hidden="true" tabindex="-1"></a><span class="in">`min.vals`</span> is the fewest points needed in each window. With decadal bins, a 60-year event window holds 6 points; a 40-year window holds only 4 and wouldn't be tested at <span class="in">`min.vals = 5`</span>. <span class="in">`sig.num`</span>, <span class="in">`n.consecutive`</span> and the windows can also be given as vectors, one value per ensemble member (e.g. <span class="in">`sig.num = rnorm(50, 1.5, 0.1)`</span>), so that the choice of parameters becomes part of the uncertainty.</span>
-<span id="cb18-163"><a href="#cb18-163" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb18-164"><a href="#cb18-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-165"><a href="#cb18-165" aria-hidden="true" tabindex="-1"></a><span class="fu">## The same test across the region</span></span>
-<span id="cb18-166"><a href="#cb18-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-167"><a href="#cb18-167" aria-hidden="true" tabindex="-1"></a>Run the same test on every record. <span class="in">`split()`</span> turns the tibble into a list of one-row tibbles, and <span class="in">`purrr::map()`</span> runs <span class="in">`detectExcursion()`</span> on each. Records with too few points in the windows return no p-value.</span>
-<span id="cb18-168"><a href="#cb18-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-169"><a href="#cb18-169" aria-hidden="true" tabindex="-1"></a><span class="in">```{r all-excursions, results = "hide"}</span></span>
-<span id="cb18-170"><a href="#cb18-170" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
-<span id="cb18-171"><a href="#cb18-171" aria-hidden="true" tabindex="-1"></a>events <span class="ot">&lt;-</span> recs <span class="sc">|&gt;</span></span>
-<span id="cb18-172"><a href="#cb18-172" aria-hidden="true" tabindex="-1"></a>  <span class="fu">split</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(recs))) <span class="sc">|&gt;</span></span>
-<span id="cb18-173"><a href="#cb18-173" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(\(r) <span class="fu">detectExcursion</span>(r,</span>
-<span id="cb18-174"><a href="#cb18-174" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb18-175"><a href="#cb18-175" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">event.yr =</span> <span class="dv">1150</span>,</span>
-<span id="cb18-176"><a href="#cb18-176" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">event.window =</span> <span class="dv">60</span>,</span>
-<span id="cb18-177"><a href="#cb18-177" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">ref.window =</span> <span class="dv">150</span>,</span>
-<span id="cb18-178"><a href="#cb18-178" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">exc.type =</span> <span class="st">"negative"</span>,</span>
-<span id="cb18-179"><a href="#cb18-179" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">sig.num =</span> <span class="fl">1.5</span>,</span>
-<span id="cb18-180"><a href="#cb18-180" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">n.consecutive =</span> <span class="dv">2</span>,</span>
-<span id="cb18-181"><a href="#cb18-181" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">min.vals =</span> <span class="dv">5</span>,</span>
-<span id="cb18-182"><a href="#cb18-182" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">simulate.time.uncertainty =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb18-183"><a href="#cb18-183" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">simulate.paleo.uncertainty =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-184"><a href="#cb18-184" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">paleo.uncertainty =</span> <span class="fl">0.2</span>,</span>
-<span id="cb18-185"><a href="#cb18-185" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">n.ens =</span> <span class="dv">50</span>,</span>
-<span id="cb18-186"><a href="#cb18-186" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">null.hypothesis.n =</span> <span class="dv">50</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb18-187"><a href="#cb18-187" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">list_rbind</span>() <span class="sc">|&gt;</span></span>
-<span id="cb18-188"><a href="#cb18-188" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pvalue))</span>
-<span id="cb18-189"><a href="#cb18-189" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-190"><a href="#cb18-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-191"><a href="#cb18-191" aria-hidden="true" tabindex="-1"></a><span class="in">```{r all-excursions-table}</span></span>
-<span id="cb18-192"><a href="#cb18-192" aria-hidden="true" tabindex="-1"></a>events <span class="sc">|&gt;</span></span>
-<span id="cb18-193"><a href="#cb18-193" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">|&gt;</span></span>
-<span id="cb18-194"><a href="#cb18-194" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, archiveType, event_probability, pvalue) <span class="sc">|&gt;</span></span>
-<span id="cb18-195"><a href="#cb18-195" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(pvalue)</span>
-<span id="cb18-196"><a href="#cb18-196" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-197"><a href="#cb18-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-198"><a href="#cb18-198" aria-hidden="true" tabindex="-1"></a>Individually, only a few records are significant. Many records weakly pointing the same way can still add up to strong evidence, and that's what the next step tests.</span>
-<span id="cb18-199"><a href="#cb18-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-200"><a href="#cb18-200" aria-hidden="true" tabindex="-1"></a><span class="fu">## A regional significance map</span></span>
-<span id="cb18-201"><a href="#cb18-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-202"><a href="#cb18-202" aria-hidden="true" tabindex="-1"></a><span class="in">`spatialSigTest()`</span> combines the records near each point on a grid. It weights each record by its distance (zero beyond <span class="in">`distance.cutoff`</span>), adds up their event probabilities, and compares the sum with the same sum for the surrogates (<span class="in">`agg.method = "robustNull"`</span>). <span class="in">`distanceGrid()`</span> sets up the grid and the distances.</span>
-<span id="cb18-203"><a href="#cb18-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-204"><a href="#cb18-204" aria-hidden="true" tabindex="-1"></a><span class="in">```{r spatial}</span></span>
-<span id="cb18-205"><a href="#cb18-205" aria-hidden="true" tabindex="-1"></a>lon.range <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">126</span>, <span class="sc">-</span><span class="dv">100</span>)</span>
-<span id="cb18-206"><a href="#cb18-206" aria-hidden="true" tabindex="-1"></a>lat.range <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">50</span>)</span>
-<span id="cb18-207"><a href="#cb18-207" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-208"><a href="#cb18-208" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">distanceGrid</span>(events, <span class="at">lon.range =</span> lon.range, <span class="at">lat.range =</span> lat.range, <span class="at">grid.resolution =</span> <span class="dv">1</span>)</span>
-<span id="cb18-209"><a href="#cb18-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-210"><a href="#cb18-210" aria-hidden="true" tabindex="-1"></a>pval_grid <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(grid,</span>
-<span id="cb18-211"><a href="#cb18-211" aria-hidden="true" tabindex="-1"></a>                        spatialSigTest,</span>
-<span id="cb18-212"><a href="#cb18-212" aria-hidden="true" tabindex="-1"></a>                        <span class="at">events =</span> events,</span>
-<span id="cb18-213"><a href="#cb18-213" aria-hidden="true" tabindex="-1"></a>                        <span class="at">agg.method =</span> <span class="st">"robustNull"</span>,</span>
-<span id="cb18-214"><a href="#cb18-214" aria-hidden="true" tabindex="-1"></a>                        <span class="at">use.weights =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-215"><a href="#cb18-215" aria-hidden="true" tabindex="-1"></a>                        <span class="at">distance.cutoff =</span> <span class="dv">500</span>)</span>
-<span id="cb18-216"><a href="#cb18-216" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-217"><a href="#cb18-217" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-218"><a href="#cb18-218" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSignificance()`</span> maps the result. It returns a list, and the map is in <span class="in">`$plot`</span>. Grid cells show the regional p-value for a negative (dry) excursion, more transparent where fewer records are nearby; points show each record's own p-value.</span>
-<span id="cb18-219"><a href="#cb18-219" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-220"><a href="#cb18-220" aria-hidden="true" tabindex="-1"></a><span class="in">```{r spatial-map, fig.height = 6}</span></span>
-<span id="cb18-221"><a href="#cb18-221" aria-hidden="true" tabindex="-1"></a>sig <span class="ot">&lt;-</span> <span class="fu">plotSignificance</span>(pval_grid,</span>
-<span id="cb18-222"><a href="#cb18-222" aria-hidden="true" tabindex="-1"></a>                        <span class="at">sigTestResults =</span> events,</span>
-<span id="cb18-223"><a href="#cb18-223" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which.test =</span> <span class="st">"pvalNeg"</span>,</span>
-<span id="cb18-224"><a href="#cb18-224" aria-hidden="true" tabindex="-1"></a>                        <span class="at">color.breaks =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.05</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span>),</span>
-<span id="cb18-225"><a href="#cb18-225" aria-hidden="true" tabindex="-1"></a>                        <span class="at">restrict.sites =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-226"><a href="#cb18-226" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha.by.weight =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb18-227"><a href="#cb18-227" aria-hidden="true" tabindex="-1"></a>                        <span class="at">cutoff.distance =</span> <span class="dv">500</span>,</span>
-<span id="cb18-228"><a href="#cb18-228" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x.lim =</span> lon.range,</span>
-<span id="cb18-229"><a href="#cb18-229" aria-hidden="true" tabindex="-1"></a>                        <span class="at">y.lim =</span> lat.range)</span>
-<span id="cb18-230"><a href="#cb18-230" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-231"><a href="#cb18-231" aria-hidden="true" tabindex="-1"></a>sig<span class="sc">$</span>plot <span class="sc">+</span></span>
-<span id="cb18-232"><a href="#cb18-232" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Dry excursion, 1120 to 1180 CE"</span>) <span class="sc">+</span></span>
-<span id="cb18-233"><a href="#cb18-233" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">colour =</span> <span class="cn">NA</span>))</span>
-<span id="cb18-234"><a href="#cb18-234" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb18-235"><a href="#cb18-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-236"><a href="#cb18-236" aria-hidden="true" tabindex="-1"></a>The mid-1100s drought is significant across the Colorado Plateau and the Four Corners, where several tree-ring records agree, but not in the north or along the coast. </span>
-<span id="cb18-237"><a href="#cb18-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-238"><a href="#cb18-238" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
-<span id="cb18-239"><a href="#cb18-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-240"><a href="#cb18-240" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Test the late-1500s megadrought: <span class="in">`event.yr = 1585`</span>, with <span class="in">`clipTime()`</span> and <span class="in">`binvec`</span> adjusted to cover 1400 to 1800.</span>
-<span id="cb18-241"><a href="#cb18-241" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`exc.type = "positive"`</span> to look for wet excursions, or <span class="in">`"either"`</span>.</span>
-<span id="cb18-242"><a href="#cb18-242" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Change <span class="in">`distance.cutoff`</span> in <span class="in">`spatialSigTest()`</span>. How sensitive is the map?</span>
-<span id="cb18-243"><a href="#cb18-243" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Give <span class="in">`sig.num`</span> and <span class="in">`n.consecutive`</span> as vectors (one value per ensemble member) so that the parameter choices become part of the uncertainty.</span>
-<span id="cb18-244"><a href="#cb18-244" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Run <span class="in">`detectShift()`</span> on the tutorial 2 composite median, or on another long record such as Leviathan Cave (<span class="in">`Leviathan.Lachniet.2014`</span>).</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb18-98"><a href="#cb18-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> <span class="st">"WNA"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-99"><a href="#cb18-99" aria-hidden="true" tabindex="-1"></a>  lipdR<span class="sc">::</span><span class="fu">filterByInterpretation</span>(<span class="fu">isMoisture</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>, <span class="at">match =</span> <span class="st">"primary"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-100"><a href="#cb18-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span></span>
+<span id="cb18-101"><a href="#cb18-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span></span>
+<span id="cb18-102"><a href="#cb18-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-103"><a href="#cb18-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">850</span>, <span class="dv">1450</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-104"><a href="#cb18-104" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map2</span>(paleoData_values, direction, <span class="st">`</span><span class="at">*</span><span class="st">`</span>))</span>
+<span id="cb18-105"><a href="#cb18-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-106"><a href="#cb18-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-107"><a href="#cb18-107" aria-hidden="true" tabindex="-1"></a>Tree rings are annual and lake records are often decadal or coarser. In annual data, year-to-year variability is large compared with a multi-decade drought, and an excursion test on the raw series mostly measures that noise. So we average every record into 10-year bins with <span class="in">`ens::bin()`</span>, which also puts trees and lakes on a comparable footing. <span class="in">`time`</span> now holds the bin centers, so we set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, telling lipdR that <span class="in">`time`</span> is its own source and not a copy of <span class="in">`year`</span> or <span class="in">`age`</span> (see <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](01-load-plot-map.qmd#time-axes)</span>):</span>
+<span id="cb18-108"><a href="#cb18-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-109"><a href="#cb18-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{r bin}</span></span>
+<span id="cb18-110"><a href="#cb18-110" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">850</span>, <span class="dv">1450</span>, <span class="at">by =</span> <span class="dv">10</span>)</span>
+<span id="cb18-111"><a href="#cb18-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-112"><a href="#cb18-112" aria-hidden="true" tabindex="-1"></a>decadal <span class="ot">&lt;-</span> <span class="cf">function</span>(time, vals) {</span>
+<span id="cb18-113"><a href="#cb18-113" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">&lt;-</span> ens<span class="sc">::</span><span class="fu">bin</span>(time, vals, <span class="at">bin.vec =</span> binvec)</span>
+<span id="cb18-114"><a href="#cb18-114" aria-hidden="true" tabindex="-1"></a>  b[<span class="fu">is.finite</span>(b[, <span class="dv">2</span>]), , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb18-115"><a href="#cb18-115" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-116"><a href="#cb18-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-117"><a href="#cb18-117" aria-hidden="true" tabindex="-1"></a>binned <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map2</span>(recs<span class="sc">$</span>time, recs<span class="sc">$</span>paleoData_values, decadal)</span>
+<span id="cb18-118"><a href="#cb18-118" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> recs <span class="sc">|&gt;</span></span>
+<span id="cb18-119"><a href="#cb18-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time =</span> purrr<span class="sc">::</span><span class="fu">map</span>(binned, \(b) b[, <span class="dv">1</span>]),</span>
+<span id="cb18-120"><a href="#cb18-120" aria-hidden="true" tabindex="-1"></a>         <span class="at">paleoData_values =</span> purrr<span class="sc">::</span><span class="fu">map</span>(binned, \(b) b[, <span class="dv">2</span>]),</span>
+<span id="cb18-121"><a href="#cb18-121" aria-hidden="true" tabindex="-1"></a>         <span class="at">timeVariableName =</span> <span class="st">"time"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-122"><a href="#cb18-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(paleoData_values, length) <span class="sc">&gt;=</span> <span class="dv">30</span>)   <span class="co"># at least 300 years of decades</span></span>
+<span id="cb18-123"><a href="#cb18-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-124"><a href="#cb18-124" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(recs)</span>
+<span id="cb18-125"><a href="#cb18-125" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-126"><a href="#cb18-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-127"><a href="#cb18-127" aria-hidden="true" tabindex="-1"></a>Now test one record, the Beef Basin tree-ring streamflow reconstruction (Meko et al., 2007). The event window is 1120 to 1180 CE (<span class="in">`event.yr = 1150`</span>, <span class="in">`event.window = 60`</span>), and the reference windows are the 150 years on each side.</span>
+<span id="cb18-128"><a href="#cb18-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-129"><a href="#cb18-129" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion, results = "hide"}</span></span>
+<span id="cb18-130"><a href="#cb18-130" aria-hidden="true" tabindex="-1"></a>beef <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, dataSetName <span class="sc">==</span> <span class="st">"BeefBasin.Meko.2007"</span>)</span>
+<span id="cb18-131"><a href="#cb18-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-132"><a href="#cb18-132" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
+<span id="cb18-133"><a href="#cb18-133" aria-hidden="true" tabindex="-1"></a>exc <span class="ot">&lt;-</span> <span class="fu">detectExcursion</span>(beef,</span>
+<span id="cb18-134"><a href="#cb18-134" aria-hidden="true" tabindex="-1"></a>                       <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb18-135"><a href="#cb18-135" aria-hidden="true" tabindex="-1"></a>                       <span class="at">event.yr =</span> <span class="dv">1150</span>,</span>
+<span id="cb18-136"><a href="#cb18-136" aria-hidden="true" tabindex="-1"></a>                       <span class="at">event.window =</span> <span class="dv">60</span>,</span>
+<span id="cb18-137"><a href="#cb18-137" aria-hidden="true" tabindex="-1"></a>                       <span class="at">ref.window =</span> <span class="dv">150</span>,</span>
+<span id="cb18-138"><a href="#cb18-138" aria-hidden="true" tabindex="-1"></a>                       <span class="at">exc.type =</span> <span class="st">"negative"</span>,</span>
+<span id="cb18-139"><a href="#cb18-139" aria-hidden="true" tabindex="-1"></a>                       <span class="at">sig.num =</span> <span class="fl">1.5</span>,</span>
+<span id="cb18-140"><a href="#cb18-140" aria-hidden="true" tabindex="-1"></a>                       <span class="at">n.consecutive =</span> <span class="dv">2</span>,</span>
+<span id="cb18-141"><a href="#cb18-141" aria-hidden="true" tabindex="-1"></a>                       <span class="at">min.vals =</span> <span class="dv">5</span>,</span>
+<span id="cb18-142"><a href="#cb18-142" aria-hidden="true" tabindex="-1"></a>                       <span class="at">simulate.time.uncertainty =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb18-143"><a href="#cb18-143" aria-hidden="true" tabindex="-1"></a>                       <span class="at">simulate.paleo.uncertainty =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-144"><a href="#cb18-144" aria-hidden="true" tabindex="-1"></a>                       <span class="at">paleo.uncertainty =</span> <span class="fl">0.2</span>,</span>
+<span id="cb18-145"><a href="#cb18-145" aria-hidden="true" tabindex="-1"></a>                       <span class="at">n.ens =</span> <span class="dv">50</span>,</span>
+<span id="cb18-146"><a href="#cb18-146" aria-hidden="true" tabindex="-1"></a>                       <span class="at">null.hypothesis.n =</span> <span class="dv">50</span>)</span>
+<span id="cb18-147"><a href="#cb18-147" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-148"><a href="#cb18-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-149"><a href="#cb18-149" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion-summary}</span></span>
+<span id="cb18-150"><a href="#cb18-150" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(exc)</span>
+<span id="cb18-151"><a href="#cb18-151" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-152"><a href="#cb18-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-153"><a href="#cb18-153" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-excursion-plot, fig.height = 4}</span></span>
+<span id="cb18-154"><a href="#cb18-154" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(exc)</span>
+<span id="cb18-155"><a href="#cb18-155" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-156"><a href="#cb18-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-157"><a href="#cb18-157" aria-hidden="true" tabindex="-1"></a>The red lines are the reference means and the thresholds (<span class="in">`sig.num`</span> standard deviations). Points beyond the threshold in the event window count toward an excursion. <span class="in">`event_probability`</span> is the fraction of ensemble members with an excursion, and the p-value compares it with the surrogates.</span>
+<span id="cb18-158"><a href="#cb18-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-159"><a href="#cb18-159" aria-hidden="true" tabindex="-1"></a>We don't simulate age uncertainty here, since tree rings are precisely dated. For a lake or speleothem record, set <span class="in">`simulate.time.uncertainty = TRUE`</span> or supply an age ensemble.</span>
+<span id="cb18-160"><a href="#cb18-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-161"><a href="#cb18-161" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
+<span id="cb18-162"><a href="#cb18-162" aria-hidden="true" tabindex="-1"></a><span class="fu">## Choosing the windows</span></span>
+<span id="cb18-163"><a href="#cb18-163" aria-hidden="true" tabindex="-1"></a><span class="in">`min.vals`</span> is the fewest points needed in each window. With decadal bins, a 60-year event window holds 6 points; a 40-year window holds only 4 and wouldn't be tested at <span class="in">`min.vals = 5`</span>. <span class="in">`sig.num`</span>, <span class="in">`n.consecutive`</span> and the windows can also be given as vectors, one value per ensemble member (e.g. <span class="in">`sig.num = rnorm(50, 1.5, 0.1)`</span>), so that the choice of parameters becomes part of the uncertainty.</span>
+<span id="cb18-164"><a href="#cb18-164" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb18-165"><a href="#cb18-165" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-166"><a href="#cb18-166" aria-hidden="true" tabindex="-1"></a><span class="fu">## The same test across the region</span></span>
+<span id="cb18-167"><a href="#cb18-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-168"><a href="#cb18-168" aria-hidden="true" tabindex="-1"></a>Run the same test on every record. <span class="in">`split()`</span> turns the tibble into a list of one-row tibbles, and <span class="in">`purrr::map()`</span> runs <span class="in">`detectExcursion()`</span> on each. Records with too few points in the windows return no p-value.</span>
+<span id="cb18-169"><a href="#cb18-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-170"><a href="#cb18-170" aria-hidden="true" tabindex="-1"></a><span class="in">```{r all-excursions, results = "hide"}</span></span>
+<span id="cb18-171"><a href="#cb18-171" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
+<span id="cb18-172"><a href="#cb18-172" aria-hidden="true" tabindex="-1"></a>events <span class="ot">&lt;-</span> recs <span class="sc">|&gt;</span></span>
+<span id="cb18-173"><a href="#cb18-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">split</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(recs))) <span class="sc">|&gt;</span></span>
+<span id="cb18-174"><a href="#cb18-174" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">map</span>(\(r) <span class="fu">detectExcursion</span>(r,</span>
+<span id="cb18-175"><a href="#cb18-175" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb18-176"><a href="#cb18-176" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">event.yr =</span> <span class="dv">1150</span>,</span>
+<span id="cb18-177"><a href="#cb18-177" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">event.window =</span> <span class="dv">60</span>,</span>
+<span id="cb18-178"><a href="#cb18-178" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">ref.window =</span> <span class="dv">150</span>,</span>
+<span id="cb18-179"><a href="#cb18-179" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">exc.type =</span> <span class="st">"negative"</span>,</span>
+<span id="cb18-180"><a href="#cb18-180" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">sig.num =</span> <span class="fl">1.5</span>,</span>
+<span id="cb18-181"><a href="#cb18-181" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">n.consecutive =</span> <span class="dv">2</span>,</span>
+<span id="cb18-182"><a href="#cb18-182" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">min.vals =</span> <span class="dv">5</span>,</span>
+<span id="cb18-183"><a href="#cb18-183" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">simulate.time.uncertainty =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb18-184"><a href="#cb18-184" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">simulate.paleo.uncertainty =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-185"><a href="#cb18-185" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">paleo.uncertainty =</span> <span class="fl">0.2</span>,</span>
+<span id="cb18-186"><a href="#cb18-186" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">n.ens =</span> <span class="dv">50</span>,</span>
+<span id="cb18-187"><a href="#cb18-187" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">null.hypothesis.n =</span> <span class="dv">50</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb18-188"><a href="#cb18-188" aria-hidden="true" tabindex="-1"></a>  purrr<span class="sc">::</span><span class="fu">list_rbind</span>() <span class="sc">|&gt;</span></span>
+<span id="cb18-189"><a href="#cb18-189" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pvalue))</span>
+<span id="cb18-190"><a href="#cb18-190" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-191"><a href="#cb18-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-192"><a href="#cb18-192" aria-hidden="true" tabindex="-1"></a><span class="in">```{r all-excursions-table}</span></span>
+<span id="cb18-193"><a href="#cb18-193" aria-hidden="true" tabindex="-1"></a>events <span class="sc">|&gt;</span></span>
+<span id="cb18-194"><a href="#cb18-194" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">|&gt;</span></span>
+<span id="cb18-195"><a href="#cb18-195" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, archiveType, event_probability, pvalue) <span class="sc">|&gt;</span></span>
+<span id="cb18-196"><a href="#cb18-196" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(pvalue)</span>
+<span id="cb18-197"><a href="#cb18-197" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-198"><a href="#cb18-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-199"><a href="#cb18-199" aria-hidden="true" tabindex="-1"></a>Individually, only a few records are significant. Many records weakly pointing the same way can still add up to strong evidence, and that's what the next step tests.</span>
+<span id="cb18-200"><a href="#cb18-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-201"><a href="#cb18-201" aria-hidden="true" tabindex="-1"></a><span class="fu">## A regional significance map</span></span>
+<span id="cb18-202"><a href="#cb18-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-203"><a href="#cb18-203" aria-hidden="true" tabindex="-1"></a><span class="in">`spatialSigTest()`</span> combines the records near each point on a grid. It weights each record by its distance (zero beyond <span class="in">`distance.cutoff`</span>), adds up their event probabilities, and compares the sum with the same sum for the surrogates (<span class="in">`agg.method = "robustNull"`</span>). <span class="in">`distanceGrid()`</span> sets up the grid and the distances.</span>
+<span id="cb18-204"><a href="#cb18-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-205"><a href="#cb18-205" aria-hidden="true" tabindex="-1"></a><span class="in">```{r spatial}</span></span>
+<span id="cb18-206"><a href="#cb18-206" aria-hidden="true" tabindex="-1"></a>lon.range <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">126</span>, <span class="sc">-</span><span class="dv">100</span>)</span>
+<span id="cb18-207"><a href="#cb18-207" aria-hidden="true" tabindex="-1"></a>lat.range <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">30</span>, <span class="dv">50</span>)</span>
+<span id="cb18-208"><a href="#cb18-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-209"><a href="#cb18-209" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">distanceGrid</span>(events, <span class="at">lon.range =</span> lon.range, <span class="at">lat.range =</span> lat.range, <span class="at">grid.resolution =</span> <span class="dv">1</span>)</span>
+<span id="cb18-210"><a href="#cb18-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-211"><a href="#cb18-211" aria-hidden="true" tabindex="-1"></a>pval_grid <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(grid,</span>
+<span id="cb18-212"><a href="#cb18-212" aria-hidden="true" tabindex="-1"></a>                        spatialSigTest,</span>
+<span id="cb18-213"><a href="#cb18-213" aria-hidden="true" tabindex="-1"></a>                        <span class="at">events =</span> events,</span>
+<span id="cb18-214"><a href="#cb18-214" aria-hidden="true" tabindex="-1"></a>                        <span class="at">agg.method =</span> <span class="st">"robustNull"</span>,</span>
+<span id="cb18-215"><a href="#cb18-215" aria-hidden="true" tabindex="-1"></a>                        <span class="at">use.weights =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-216"><a href="#cb18-216" aria-hidden="true" tabindex="-1"></a>                        <span class="at">distance.cutoff =</span> <span class="dv">500</span>)</span>
+<span id="cb18-217"><a href="#cb18-217" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-218"><a href="#cb18-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-219"><a href="#cb18-219" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSignificance()`</span> maps the result. It returns a list, and the map is in <span class="in">`$plot`</span>. Grid cells show the regional p-value for a negative (dry) excursion, more transparent where fewer records are nearby; points show each record's own p-value.</span>
+<span id="cb18-220"><a href="#cb18-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-221"><a href="#cb18-221" aria-hidden="true" tabindex="-1"></a><span class="in">```{r spatial-map, fig.height = 6}</span></span>
+<span id="cb18-222"><a href="#cb18-222" aria-hidden="true" tabindex="-1"></a>sig <span class="ot">&lt;-</span> <span class="fu">plotSignificance</span>(pval_grid,</span>
+<span id="cb18-223"><a href="#cb18-223" aria-hidden="true" tabindex="-1"></a>                        <span class="at">sigTestResults =</span> events,</span>
+<span id="cb18-224"><a href="#cb18-224" aria-hidden="true" tabindex="-1"></a>                        <span class="at">which.test =</span> <span class="st">"pvalNeg"</span>,</span>
+<span id="cb18-225"><a href="#cb18-225" aria-hidden="true" tabindex="-1"></a>                        <span class="at">color.breaks =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.05</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span>),</span>
+<span id="cb18-226"><a href="#cb18-226" aria-hidden="true" tabindex="-1"></a>                        <span class="at">restrict.sites =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-227"><a href="#cb18-227" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha.by.weight =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-228"><a href="#cb18-228" aria-hidden="true" tabindex="-1"></a>                        <span class="at">cutoff.distance =</span> <span class="dv">500</span>,</span>
+<span id="cb18-229"><a href="#cb18-229" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x.lim =</span> lon.range,</span>
+<span id="cb18-230"><a href="#cb18-230" aria-hidden="true" tabindex="-1"></a>                        <span class="at">y.lim =</span> lat.range)</span>
+<span id="cb18-231"><a href="#cb18-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-232"><a href="#cb18-232" aria-hidden="true" tabindex="-1"></a>sig<span class="sc">$</span>plot <span class="sc">+</span></span>
+<span id="cb18-233"><a href="#cb18-233" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Dry excursion, 1120 to 1180 CE"</span>) <span class="sc">+</span></span>
+<span id="cb18-234"><a href="#cb18-234" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">colour =</span> <span class="cn">NA</span>))</span>
+<span id="cb18-235"><a href="#cb18-235" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-236"><a href="#cb18-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-237"><a href="#cb18-237" aria-hidden="true" tabindex="-1"></a>The mid-1100s drought is significant across the Colorado Plateau and the Four Corners, where several tree-ring records agree, but not in the north or along the coast. </span>
+<span id="cb18-238"><a href="#cb18-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-239"><a href="#cb18-239" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
+<span id="cb18-240"><a href="#cb18-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-241"><a href="#cb18-241" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Test the late-1500s megadrought: <span class="in">`event.yr = 1585`</span>, with <span class="in">`clipTime()`</span> and <span class="in">`binvec`</span> adjusted to cover 1400 to 1800.</span>
+<span id="cb18-242"><a href="#cb18-242" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`exc.type = "positive"`</span> to look for wet excursions, or <span class="in">`"either"`</span>.</span>
+<span id="cb18-243"><a href="#cb18-243" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Change <span class="in">`distance.cutoff`</span> in <span class="in">`spatialSigTest()`</span>. How sensitive is the map?</span>
+<span id="cb18-244"><a href="#cb18-244" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Give <span class="in">`sig.num`</span> and <span class="in">`n.consecutive`</span> as vectors (one value per ensemble member) so that the parameter choices become part of the uncertainty.</span>
+<span id="cb18-245"><a href="#cb18-245" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Run <span class="in">`detectShift()`</span> on the tutorial 2 composite median, or on another long record such as Leviathan Cave (<span class="in">`Leviathan.Lachniet.2014`</span>).</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 <footer class="footer">

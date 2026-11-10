@@ -545,8 +545,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>You need <strong>lipdR 0.8.3 or newer</strong> and <strong>geoChronR 2.0.0 or newer</strong>. lipdR 0.7 renamed the compilation fields (<code>inCompilationBeta</code> became <code>inCompilation</code>), added <code>filterByCompilation()</code>, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check <code>packageVersion("geoChronR")</code>.</p>
+<p>You need <strong>lipdR 0.8.4 or newer</strong> and <strong>geoChronR 2.0.0 or newer</strong>. lipdR 0.7 renamed the compilation fields (<code>inCompilationBeta</code> became <code>inCompilation</code>), added <code>filterByCompilation()</code>, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check <code>packageVersion("geoChronR")</code>.</p>
 <p>lipdR 0.8 records the time scale (yr BP, ka, year CE, …) of every time column, and gives every timeseries a standard <code>time</code> column. lipdViz, compositeR and actR use it by default, and take <code>time.units</code> to choose the scale, so records dated in yr BP and in year CE can be plotted and analyzed together. <a href="./tutorials/01-load-plot-map.html#time-axes">Tutorial 1</a> explains how it works.</p>
+<p>lipdR 0.8.4 adds <code>filterByInterpretation()</code>, which selects records by their interpretations (for example, the records whose primary climate interpretation is precipitation), whichever number the interpretation has in each record. See <a href="./tutorials/01-load-plot-map.html#interpretations">tutorial 1</a>.</p>
 </div>
 </div>
 </section>
@@ -1174,14 +1175,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>::: callout-warning</span>
 <span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="fu">## Old scripts may break</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>You need **lipdR 0.8.3 or newer** and **geoChronR 2.0.0 or newer**. lipdR 0.7 renamed the compilation fields (<span class="in">`inCompilationBeta`</span> became <span class="in">`inCompilation`</span>), added <span class="in">`filterByCompilation()`</span>, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check <span class="in">`packageVersion("geoChronR")`</span>.</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>You need **lipdR 0.8.4 or newer** and **geoChronR 2.0.0 or newer**. lipdR 0.7 renamed the compilation fields (<span class="in">`inCompilationBeta`</span> became <span class="in">`inCompilation`</span>), added <span class="in">`filterByCompilation()`</span>, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check <span class="in">`packageVersion("geoChronR")`</span>.</span>
 <span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>lipdR 0.8 records the time scale (yr BP, ka, year CE, ...) of every time column, and gives every timeseries a standard <span class="in">`time`</span> column. lipdViz, compositeR and actR use it by default, and take <span class="in">`time.units`</span> to choose the scale, so records dated in yr BP and in year CE can be plotted and analyzed together. <span class="co">[</span><span class="ot">Tutorial 1</span><span class="co">](tutorials/01-load-plot-map.qmd#time-axes)</span> explains how it works.</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="fu">## Getting help</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>lipdR 0.8.4 adds <span class="in">`filterByInterpretation()`</span>, which selects records by their interpretations (for example, the records whose primary climate interpretation is precipitation), whichever number the interpretation has in each record. See <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](tutorials/01-load-plot-map.qmd#interpretations)</span>.</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>Open an <span class="co">[</span><span class="ot">issue</span><span class="co">](https://github.com/nickmckay/hydroclimate2k-analysis-tutorials/issues)</span> on this repository, or find Nick at the workshop.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="fu">## Getting help</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>Open an <span class="co">[</span><span class="ot">issue</span><span class="co">](https://github.com/nickmckay/hydroclimate2k-analysis-tutorials/issues)</span> on this repository, or find Nick at the workshop.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 <footer class="footer">

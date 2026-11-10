@@ -426,6 +426,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#read-the-compilation" id="toc-read-the-compilation" class="nav-link" data-scroll-target="#read-the-compilation">Read the compilation</a></li>
   <li><a href="#from-datasets-to-timeseries" id="toc-from-datasets-to-timeseries" class="nav-link" data-scroll-target="#from-datasets-to-timeseries">From datasets to timeseries</a></li>
   <li><a href="#a-first-look" id="toc-a-first-look" class="nav-link" data-scroll-target="#a-first-look">A first look</a></li>
+  <li><a href="#interpretations" id="toc-interpretations" class="nav-link" data-scroll-target="#interpretations">Interpretations</a></li>
   <li><a href="#ipcc-ar6-regions" id="toc-ipcc-ar6-regions" class="nav-link" data-scroll-target="#ipcc-ar6-regions">IPCC AR6 regions</a></li>
   <li><a href="#maps" id="toc-maps" class="nav-link" data-scroll-target="#maps">Maps</a></li>
   <li><a href="#time-axes" id="toc-time-axes" class="nav-link" data-scroll-target="#time-axes">Time axes</a></li>
@@ -486,9 +487,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"data/hydroclimate2k0_9_0.zip"</span>, <span class="at">exdir =</span> <span class="st">"data/hydroclimate2k0_9_0"</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">readLipd</span>(<span class="st">"data/hydroclimate2k0_9_0"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>In these tutorials we use <code>getHydro2k()</code>, which does all of this once (download, unzip, read) and keeps a fast-loading copy in <code>data/</code>:</p>
+<p>In these tutorials we use <code>getHydroclimate2k()</code>, which does all of this once (download, unzip, read) and keeps a fast-loading copy in <code>data/</code>:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">getHydro2k</span>()</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">getHydroclimate2k</span>()</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(D)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 484</code></pre>
@@ -581,7 +582,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>What variables and interpretations are there? <code>interpretation1_variable</code> is the climate variable the authors interpret the record as, and <code>interpretation1_direction</code> says whether larger values mean more or less of it.</p>
+<p>What variables are there?</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(paleoData_variableName, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
@@ -593,29 +594,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(interpretation1_variable, interpretation1_direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>queryTs()</code> and <code>filterTs()</code> select timeseries with a simple expression, for example <code>filterTs(TS, "archiveType == Speleothem")</code>. With a tibble, <code>dplyr::filter()</code> does the same job, and that is what we use here.</p>
+</section>
+<section id="interpretations" class="level2">
+<h2 class="anchored" data-anchor-id="interpretations">Interpretations</h2>
+<p>An interpretation says what a record is a measure of. Each record can have several, numbered (<code>interpretation1_variable</code>, <code>interpretation2_variable</code>, …), and each has a <code>scope</code>: <strong>climate</strong> (the climate variable the record reflects), <strong>isotope</strong> (what controls an isotope value, such as the d18O of precipitation) or <strong>environment</strong> (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the <code>interpretation1_</code> columns don’t tell the whole story.</p>
+<p><code>getInterpretations()</code> lists them with one row per interpretation. <code>variable</code> is what the record is interpreted as, and <code>direction</code> says whether larger values mean more or less of it:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>interp <span class="ot">&lt;-</span> <span class="fu">getInterpretations</span>(h2k)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(interp, scope)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
-{"columns":[{"label":["interpretation1_variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["interpretation1_direction"],"name":[2],"type":["chr"],"align":["left"]},{"label":["n"],"name":[3],"type":["int"],"align":["right"]}],"data":[{"1":"temperature","2":"positive","3":"163"},{"1":"NA","2":"NA","3":"99"},{"1":"precipitation","2":"positive","3":"72"},{"1":"precipitation","2":"negative","3":"36"},{"1":"salinity","2":"positive","3":"35"},{"1":"Precipitation index","2":"positive","3":"32"},{"1":"effectivePrecipitation","2":"negative","3":"32"},{"1":"temperature","2":"NA","3":"19"},{"1":"P/E","2":"negative","3":"17"},{"1":"streamflow","2":"Positive","3":"16"},{"1":"precipitation","2":"Positive","3":"13"},{"1":"precipitationIsotope","2":"negative","3":"11"},{"1":"salinity","2":"increase","3":"10"},{"1":"effectivePrecipitation","2":"positive","3":"9"},{"1":"precipitation and Hydroclimate","2":"NA","3":"8"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":["scope"],"name":[1],"type":["chr"],"align":["left"]},{"label":["n"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"chronology","2":"4"},{"1":"climate","2":"1312"},{"1":"environment","2":"580"},{"1":"isotope","2":"1083"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>interp <span class="sc">|&gt;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(scope <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(variable, direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["direction"],"name":[2],"type":["chr"],"align":["left"]},{"label":["n"],"name":[3],"type":["int"],"align":["right"]}],"data":[{"1":"NA","2":"NA","3":"633"},{"1":"temperature","2":"positive","3":"168"},{"1":"precipitation","2":"positive","3":"77"},{"1":"Precipitation index","2":"positive","3":"49"},{"1":"effectivePrecipitation","2":"negative","3":"38"},{"1":"precipitation","2":"negative","3":"37"},{"1":"salinity","2":"positive","3":"37"},{"1":"temperature","2":"NA","3":"22"},{"1":"temperature","2":"negative","3":"19"},{"1":"P/E","2":"negative","3":"17"},{"1":"streamflow","2":"Positive","3":"16"},{"1":"precipitation","2":"Positive","3":"15"},{"1":"effectivePrecipitation","2":"positive","3":"11"},{"1":"precipitationIsotope","2":"negative","3":"11"},{"1":"salinity","2":"increase","3":"10"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
 </div>
-<p><code>queryTs()</code> and <code>filterTs()</code> select timeseries with a simple expression, for example <code>filterTs(TS, "archiveType == Speleothem")</code>. With a tibble, <code>dplyr::filter()</code> does the same job, and that is what we use here.</p>
+<p>The vocabulary isn’t fully standardized yet (“precipitation”, “Precipitation amount”, “Precipitation index”, …), which is a curation to-do.</p>
+<p><code>filterByInterpretation()</code> selects records by their interpretations. Conditions are checked within one interpretation, so this keeps records with an interpretation that is both precipitation and positive (named arguments match any of their values, ignoring case):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="at">variable =</span> <span class="st">"precipitation"</span>, <span class="at">direction =</span> <span class="st">"positive"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["archiveType"],"name":[1],"type":["chr"],"align":["left"]},{"label":["n"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"Wood","2":"37"},{"1":"LakeSediment","2":"24"},{"1":"Documents","2":"23"},{"1":"GlacierIce","2":"5"},{"1":"MarineSediment","2":"3"},{"1":"Peat","2":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+<p>Unnamed conditions are R expressions, evaluated on the rows of <code>getInterpretations()</code>, so you can use any logic. Here <code>grepl()</code> catches all the PDSI variants (“PDSI”, “scPDSI”), and <code>scope = "climate"</code> looks only at climate interpretations (a missing scope counts as climate):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">grepl</span>(<span class="st">"pdsi"</span>, variable, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["archiveType"],"name":[1],"type":["chr"],"align":["left"]},{"label":["n"],"name":[2],"type":["int"],"align":["right"]}],"data":[{"1":"Wood","2":"19"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
+<p><code>match</code> sets how a record’s interpretations combine: <code>"any"</code> (the default) keeps a record if any of them matches, <code>"primary"</code> only if its top one does (lowest <code>rank</code>, or else the lowest number), <code>"all"</code> if all of them do, and <code>"none"</code> if none does. Tutorials 2 and 4 use <code>filterByInterpretation()</code> to choose the records interpreted as moisture.</p>
 </section>
 <section id="ipcc-ar6-regions" class="level2">
 <h2 class="anchored" data-anchor-id="ipcc-ar6-regions">IPCC AR6 regions</h2>
 <p>None of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so <code>R/helpers.R</code> provides two helpers: <code>getAr6Regions()</code> reads the region polygons, and <code>addAr6Region()</code> adds the region of each record with a point-in-polygon test (<code>sf</code>).</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -626,11 +672,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Which regions have both lake and speleothem records?</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -644,7 +690,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="maps">Maps</h2>
 <p><code>mapTs()</code> maps a set of timeseries, colored by any column. Here we color by archive type.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -655,7 +701,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>mapLipd()</code> maps datasets instead of timeseries:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -666,8 +712,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>Both return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region’s boundaries fall:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -688,8 +734,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <p><code>extractTs()</code> also gives every timeseries a <code>time</code> column: a copy of its primary time column, which <code>timeVariableName</code> names (usually <code>age</code> or <code>year</code>). <code>timeSource</code> says how its scale is known: from the file’s metadata, from its units, or “assumed” when the units don’t say.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -701,20 +747,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Those few “assumed” records have time units that lipdR doesn’t recognize (for example “count/yr”), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it’s worth checking.</p>
 <p>With this information, lipdR converts between any two scales. <code>convertTime()</code> converts numbers:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 1950 1900  950    0</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1]   750 -2250</code></pre>
 </div>
 </div>
 <p>and <code>convertTsTime()</code> converts the <code>time</code> of every record, and updates the metadata:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
@@ -742,7 +788,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="overview-plots">Overview plots</h2>
 <p><code>plotTimeAvailabilityTs()</code> shows how many records cover each time, grouped by archive. It puts every record on the scale given by <code>time.units</code>, here years CE:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -753,7 +799,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>plotSummaryTs()</code> combines the map and the availability plot:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -768,10 +814,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="plot-one-record">Plot one record</h2>
 <p><code>plotTs()</code> plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -786,23 +832,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="stacked-timeseries-plots">Stacked timeseries plots</h2>
 <p><code>plotTimeseriesStack()</code> plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with <code>clipTime()</code> (from <code>R/helpers.R</code>). We use <code>h2k_ce</code>, so that every <code>time</code> is in years CE. <code>plotTimeseriesStack()</code> plots <code>time</code> by default, and labels the axis from its scale. Change <code>region</code> to any acronym from the table above.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region, <span class="sc">!</span><span class="fu">is.na</span>(interpretation1_variable)) <span class="sc">|&gt;</span></span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="sc">!</span><span class="fu">is.na</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 30</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -816,6 +863,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="try-this">Try this</h2>
 <ul>
 <li>Map only one archive type, or color the map by <code>interpretation1_variable</code>.</li>
+<li>Use <code>filterByInterpretation()</code> to find the records interpreted as temperature, and map them. How many have temperature as their primary interpretation (<code>match = "primary"</code>)?</li>
 <li>Pick another AR6 region and make its stack plot.</li>
 <li>Use <code>filterByCompilation()</code> with a <code>version</code> to compare membership between versions.</li>
 <li><code>D[["&lt;dataSetName&gt;"]]</code> gets one dataset by name. Try <code>getTables()</code> on its paleoData to see all its measurement tables.</li>
@@ -1402,259 +1450,293 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <script type="application/javascript">
   window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "1. Loading, exploring, plotting and mapping"</span></span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "lipdR and lipdViz"</span></span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>This tutorial reads the Hydroclimate2k compilation into R, narrows it down to the records in the compilation, finds which IPCC AR6 region each record is in, and makes maps and timeseries plots. The later tutorials build on these steps.</span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a><span class="fu">## Packages and helpers</span></span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdR)    <span class="co"># read, extract and filter LiPD data</span></span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdViz)  <span class="co"># maps and plots</span></span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"R/helpers.R"</span>))</span>
-<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a><span class="fu">checkVersions</span>()</span>
-<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a><span class="in">`R/helpers.R`</span> holds a few small functions shared by all the tutorials. <span class="in">`checkVersions()`</span> stops with a message if any of the LiPD packages is too old.</span>
-<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-22"><a href="#cb44-22" aria-hidden="true" tabindex="-1"></a><span class="fu">## Read the compilation</span></span>
-<span id="cb44-23"><a href="#cb44-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-24"><a href="#cb44-24" aria-hidden="true" tabindex="-1"></a>The compilation is distributed as a zip file of LiPD files (one per dataset) on lipdverse.org. You can read it straight from the web:</span>
-<span id="cb44-25"><a href="#cb44-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-26"><a href="#cb44-26" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read-url, eval = FALSE}</span></span>
-<span id="cb44-27"><a href="#cb44-27" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">1800</span>)  <span class="co"># it's about 280 MB, so allow more than R's default 60 s</span></span>
-<span id="cb44-28"><a href="#cb44-28" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">readLipd</span>(<span class="st">"https://lipdverse.org/export/downloads/hydroclimate2k/0_9_0/hydroclimate2k0_9_0.zip"</span>)</span>
-<span id="cb44-29"><a href="#cb44-29" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-30"><a href="#cb44-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-31"><a href="#cb44-31" aria-hidden="true" tabindex="-1"></a>or from a copy you have downloaded. <span class="in">`readLipd()`</span> can't open a local zip file, so unzip it first and read the folder of <span class="in">`.lpd`</span> files:</span>
-<span id="cb44-32"><a href="#cb44-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-33"><a href="#cb44-33" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read-local, eval = FALSE}</span></span>
-<span id="cb44-34"><a href="#cb44-34" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"data/hydroclimate2k0_9_0.zip"</span>, <span class="at">exdir =</span> <span class="st">"data/hydroclimate2k0_9_0"</span>)</span>
-<span id="cb44-35"><a href="#cb44-35" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">readLipd</span>(<span class="st">"data/hydroclimate2k0_9_0"</span>)</span>
-<span id="cb44-36"><a href="#cb44-36" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-37"><a href="#cb44-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-38"><a href="#cb44-38" aria-hidden="true" tabindex="-1"></a>In these tutorials we use <span class="in">`getHydro2k()`</span>, which does all of this once (download, unzip, read) and keeps a fast-loading copy in <span class="in">`data/`</span>:</span>
-<span id="cb44-39"><a href="#cb44-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-40"><a href="#cb44-40" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read}</span></span>
-<span id="cb44-41"><a href="#cb44-41" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">getHydro2k</span>()</span>
-<span id="cb44-42"><a href="#cb44-42" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(D)</span>
-<span id="cb44-43"><a href="#cb44-43" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-44"><a href="#cb44-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-45"><a href="#cb44-45" aria-hidden="true" tabindex="-1"></a><span class="in">`D`</span> is a *multi-LiPD* object: a named list with one element per dataset. Each dataset holds its metadata (<span class="in">`geo`</span>, <span class="in">`pub`</span>, <span class="in">`archiveType`</span>, ...) and its data tables (<span class="in">`paleoData`</span>, <span class="in">`chronData`</span>).</span>
-<span id="cb44-46"><a href="#cb44-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-47"><a href="#cb44-47" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-dataset}</span></span>
-<span id="cb44-48"><a href="#cb44-48" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(D)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb44-49"><a href="#cb44-49" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> D[[<span class="dv">1</span>]]</span>
-<span id="cb44-50"><a href="#cb44-50" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>dataSetName</span>
-<span id="cb44-51"><a href="#cb44-51" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>archiveType</span>
-<span id="cb44-52"><a href="#cb44-52" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>geo<span class="sc">$</span>latitude</span>
-<span id="cb44-53"><a href="#cb44-53" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>geo<span class="sc">$</span>longitude</span>
-<span id="cb44-54"><a href="#cb44-54" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-55"><a href="#cb44-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-56"><a href="#cb44-56" aria-hidden="true" tabindex="-1"></a><span class="fu">## From datasets to timeseries</span></span>
-<span id="cb44-57"><a href="#cb44-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-58"><a href="#cb44-58" aria-hidden="true" tabindex="-1"></a>Most analyses work on *timeseries*: one variable (a column of a data table) together with its time axis and all the metadata above it. <span class="in">`extractTs()`</span> pulls every column out of every dataset, and <span class="in">`ts2tibble()`</span> turns the result into a data frame, one row per timeseries.</span>
-<span id="cb44-59"><a href="#cb44-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-60"><a href="#cb44-60" aria-hidden="true" tabindex="-1"></a><span class="in">```{r extract}</span></span>
-<span id="cb44-61"><a href="#cb44-61" aria-hidden="true" tabindex="-1"></a>TS <span class="ot">&lt;-</span> <span class="fu">extractTs</span>(D)</span>
-<span id="cb44-62"><a href="#cb44-62" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(TS)</span>
-<span id="cb44-63"><a href="#cb44-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-64"><a href="#cb44-64" aria-hidden="true" tabindex="-1"></a>ts_all <span class="ot">&lt;-</span> <span class="fu">ts2tibble</span>(TS)</span>
-<span id="cb44-65"><a href="#cb44-65" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ts_all)</span>
-<span id="cb44-66"><a href="#cb44-66" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-67"><a href="#cb44-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-68"><a href="#cb44-68" aria-hidden="true" tabindex="-1"></a>Most of those columns are not climate records: they are depths, ages, sample IDs, and variables that the curators did not choose for the compilation. Membership is recorded in each timeseries' <span class="in">`inCompilation`</span> fields, which list the compilations it belongs to and, for each, the versions it has been part of. <span class="in">`filterByCompilation()`</span> keeps the members.</span>
-<span id="cb44-69"><a href="#cb44-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-70"><a href="#cb44-70" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-compilation}</span></span>
-<span id="cb44-71"><a href="#cb44-71" aria-hidden="true" tabindex="-1"></a><span class="fu">filterByCompilation</span>(ts_all, <span class="st">"hydroclimate2k"</span>) <span class="sc">|&gt;</span> <span class="fu">nrow</span>()</span>
-<span id="cb44-72"><a href="#cb44-72" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-73"><a href="#cb44-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-74"><a href="#cb44-74" aria-hidden="true" tabindex="-1"></a>That includes a timeseries that was in earlier versions but left the compilation. To get exactly the members of the version we downloaded, give the version too. Versions are written with underscores, as in the file names (<span class="in">`h2k_version`</span> is <span class="in">`"0_9_0"`</span>):</span>
-<span id="cb44-75"><a href="#cb44-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-76"><a href="#cb44-76" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-version}</span></span>
-<span id="cb44-77"><a href="#cb44-77" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">filterByCompilation</span>(ts_all, <span class="st">"hydroclimate2k"</span>,</span>
-<span id="cb44-78"><a href="#cb44-78" aria-hidden="true" tabindex="-1"></a>                           <span class="at">version =</span> h2k_version, <span class="at">version.op =</span> <span class="st">"=="</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-79"><a href="#cb44-79" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">as_tibble</span>()</span>
-<span id="cb44-80"><a href="#cb44-80" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(h2k)</span>
-<span id="cb44-81"><a href="#cb44-81" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-82"><a href="#cb44-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-83"><a href="#cb44-83" aria-hidden="true" tabindex="-1"></a>::: callout-warning</span>
-<span id="cb44-84"><a href="#cb44-84" aria-hidden="true" tabindex="-1"></a><span class="fu">## Use underscores in the version</span></span>
-<span id="cb44-85"><a href="#cb44-85" aria-hidden="true" tabindex="-1"></a><span class="in">`version = "0.9.0"`</span> (with dots) currently matches nothing and returns an empty table without an error. Use <span class="in">`"0_9_0"`</span>.</span>
-<span id="cb44-86"><a href="#cb44-86" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb44-87"><a href="#cb44-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-88"><a href="#cb44-88" aria-hidden="true" tabindex="-1"></a>The <span class="in">`tibble::as_tibble()`</span> at the end turns lipdR's timeseries tibble into a plain tibble, which prints more compactly and works with all of dplyr.</span>
-<span id="cb44-89"><a href="#cb44-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-90"><a href="#cb44-90" aria-hidden="true" tabindex="-1"></a><span class="fu">## A first look</span></span>
-<span id="cb44-91"><a href="#cb44-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-92"><a href="#cb44-92" aria-hidden="true" tabindex="-1"></a>Count records by archive type:</span>
-<span id="cb44-93"><a href="#cb44-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-94"><a href="#cb44-94" aria-hidden="true" tabindex="-1"></a><span class="in">```{r archive-counts}</span></span>
-<span id="cb44-95"><a href="#cb44-95" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-96"><a href="#cb44-96" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb44-97"><a href="#cb44-97" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-98"><a href="#cb44-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-99"><a href="#cb44-99" aria-hidden="true" tabindex="-1"></a>What variables and interpretations are there? <span class="in">`interpretation1_variable`</span> is the climate variable the authors interpret the record as, and <span class="in">`interpretation1_direction`</span> says whether larger values mean more or less of it.</span>
-<span id="cb44-100"><a href="#cb44-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-101"><a href="#cb44-101" aria-hidden="true" tabindex="-1"></a><span class="in">```{r variables}</span></span>
-<span id="cb44-102"><a href="#cb44-102" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-103"><a href="#cb44-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(paleoData_variableName, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-104"><a href="#cb44-104" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
-<span id="cb44-105"><a href="#cb44-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-106"><a href="#cb44-106" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-107"><a href="#cb44-107" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(interpretation1_variable, interpretation1_direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-108"><a href="#cb44-108" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
-<span id="cb44-109"><a href="#cb44-109" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-110"><a href="#cb44-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-111"><a href="#cb44-111" aria-hidden="true" tabindex="-1"></a><span class="in">`queryTs()`</span> and <span class="in">`filterTs()`</span> select timeseries with a simple expression, for example <span class="in">`filterTs(TS, "archiveType == Speleothem")`</span>. With a tibble, <span class="in">`dplyr::filter()`</span> does the same job, and that is what we use here.</span>
-<span id="cb44-112"><a href="#cb44-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-113"><a href="#cb44-113" aria-hidden="true" tabindex="-1"></a><span class="fu">## IPCC AR6 regions</span></span>
-<span id="cb44-114"><a href="#cb44-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-115"><a href="#cb44-115" aria-hidden="true" tabindex="-1"></a>None of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so <span class="in">`R/helpers.R`</span> provides two helpers: <span class="in">`getAr6Regions()`</span> reads the region polygons, and <span class="in">`addAr6Region()`</span> adds the region of each record with a point-in-polygon test (<span class="in">`sf`</span>).</span>
-<span id="cb44-116"><a href="#cb44-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-117"><a href="#cb44-117" aria-hidden="true" tabindex="-1"></a><span class="in">```{r ar6}</span></span>
-<span id="cb44-118"><a href="#cb44-118" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
-<span id="cb44-119"><a href="#cb44-119" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
-<span id="cb44-120"><a href="#cb44-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-121"><a href="#cb44-121" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-122"><a href="#cb44-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-123"><a href="#cb44-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
-<span id="cb44-124"><a href="#cb44-124" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-125"><a href="#cb44-125" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-126"><a href="#cb44-126" aria-hidden="true" tabindex="-1"></a>Which regions have both lake and speleothem records?</span>
-<span id="cb44-127"><a href="#cb44-127" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-128"><a href="#cb44-128" aria-hidden="true" tabindex="-1"></a><span class="in">```{r region-archive}</span></span>
-<span id="cb44-129"><a href="#cb44-129" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-130"><a href="#cb44-130" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
-<span id="cb44-131"><a href="#cb44-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
-<span id="cb44-132"><a href="#cb44-132" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-133"><a href="#cb44-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span>
-<span id="cb44-134"><a href="#cb44-134" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-135"><a href="#cb44-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-136"><a href="#cb44-136" aria-hidden="true" tabindex="-1"></a><span class="fu">## Maps</span></span>
-<span id="cb44-137"><a href="#cb44-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-138"><a href="#cb44-138" aria-hidden="true" tabindex="-1"></a><span class="in">`mapTs()`</span> maps a set of timeseries, colored by any column. Here we color by archive type.</span>
-<span id="cb44-139"><a href="#cb44-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-140"><a href="#cb44-140" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-archive, fig.height = 6}</span></span>
-<span id="cb44-141"><a href="#cb44-141" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
-<span id="cb44-142"><a href="#cb44-142" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-143"><a href="#cb44-143" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-144"><a href="#cb44-144" aria-hidden="true" tabindex="-1"></a><span class="in">`mapLipd()`</span> maps datasets instead of timeseries:</span>
-<span id="cb44-145"><a href="#cb44-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-146"><a href="#cb44-146" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-lipd, fig.height = 6}</span></span>
-<span id="cb44-147"><a href="#cb44-147" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb44-148"><a href="#cb44-148" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-149"><a href="#cb44-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-150"><a href="#cb44-150" aria-hidden="true" tabindex="-1"></a>Both return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region's boundaries fall:</span>
-<span id="cb44-151"><a href="#cb44-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-152"><a href="#cb44-152" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-regions, fig.height = 6}</span></span>
-<span id="cb44-153"><a href="#cb44-153" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb44-154"><a href="#cb44-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span>
-<span id="cb44-155"><a href="#cb44-155" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-156"><a href="#cb44-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-157"><a href="#cb44-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## Time axes</span></span>
-<span id="cb44-158"><a href="#cb44-158" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-159"><a href="#cb44-159" aria-hidden="true" tabindex="-1"></a>Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:</span>
-<span id="cb44-160"><a href="#cb44-160" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-161"><a href="#cb44-161" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeUnits`</span>: e.g. "yr AD", "yr BP" or "ka"</span>
-<span id="cb44-162"><a href="#cb44-162" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDatum`</span>: the year CE of time zero (0 for CE, 1950 for BP)</span>
-<span id="cb44-163"><a href="#cb44-163" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDirection`</span>: "prograde" if time counts forward (year CE), "retrograde" if it counts back (yr BP)</span>
-<span id="cb44-164"><a href="#cb44-164" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeExponent`</span>: 0 for years, 3 for ka (thousands of years)</span>
-<span id="cb44-165"><a href="#cb44-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-166"><a href="#cb44-166" aria-hidden="true" tabindex="-1"></a><span class="in">`extractTs()`</span> also gives every timeseries a <span class="in">`time`</span> column: a copy of its primary time column, which <span class="in">`timeVariableName`</span> names (usually <span class="in">`age`</span> or <span class="in">`year`</span>). <span class="in">`timeSource`</span> says how its scale is known: from the file's metadata, from its units, or "assumed" when the units don't say.</span>
-<span id="cb44-167"><a href="#cb44-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-168"><a href="#cb44-168" aria-hidden="true" tabindex="-1"></a><span class="in">```{r time-meta}</span></span>
-<span id="cb44-169"><a href="#cb44-169" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-170"><a href="#cb44-170" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span>
-<span id="cb44-171"><a href="#cb44-171" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-172"><a href="#cb44-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-173"><a href="#cb44-173" aria-hidden="true" tabindex="-1"></a>Those few "assumed" records have time units that lipdR doesn't recognize (for example "count/yr"), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it's worth checking.</span>
-<span id="cb44-174"><a href="#cb44-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-175"><a href="#cb44-175" aria-hidden="true" tabindex="-1"></a>With this information, lipdR converts between any two scales. <span class="in">`convertTime()`</span> converts numbers:</span>
-<span id="cb44-176"><a href="#cb44-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-177"><a href="#cb44-177" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-time}</span></span>
-<span id="cb44-178"><a href="#cb44-178" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
-<span id="cb44-179"><a href="#cb44-179" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
-<span id="cb44-180"><a href="#cb44-180" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-181"><a href="#cb44-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-182"><a href="#cb44-182" aria-hidden="true" tabindex="-1"></a>and <span class="in">`convertTsTime()`</span> converts the <span class="in">`time`</span> of every record, and updates the metadata:</span>
-<span id="cb44-183"><a href="#cb44-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-184"><a href="#cb44-184" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-ts-time}</span></span>
-<span id="cb44-185"><a href="#cb44-185" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
-<span id="cb44-186"><a href="#cb44-186" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb44-187"><a href="#cb44-187" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span>
-<span id="cb44-188"><a href="#cb44-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-189"><a href="#cb44-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-190"><a href="#cb44-190" aria-hidden="true" tabindex="-1"></a>The original <span class="in">`age`</span> and <span class="in">`year`</span> columns stay as they were. lipdViz, compositeR and actR all read <span class="in">`time`</span> and its scale, so you usually don't need to convert anything yourself: you tell each function which scale you want with <span class="in">`time.units`</span>. They also take <span class="in">`time.variable`</span>, to use another time column, such as <span class="in">`age`</span> when <span class="in">`time`</span> is <span class="in">`year`</span>. <span class="in">`h2kTimeseries()`</span> in <span class="in">`R/helpers.R`</span>, which the later tutorials use, returns every record with <span class="in">`time`</span> in years CE.</span>
-<span id="cb44-191"><a href="#cb44-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-192"><a href="#cb44-192" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
-<span id="cb44-193"><a href="#cb44-193" aria-hidden="true" tabindex="-1"></a><span class="fu">## If you change `time`</span></span>
-<span id="cb44-194"><a href="#cb44-194" aria-hidden="true" tabindex="-1"></a>Because <span class="in">`time`</span> is a copy of its source column, lipdR checks that they still agree. If you edit <span class="in">`time`</span> but not the source column, <span class="in">`getTsTime()`</span> (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (<span class="in">`clipTime()`</span> in <span class="in">`R/helpers.R`</span> clips every column), or set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, which makes <span class="in">`time`</span> its own source. <span class="co">[</span><span class="ot">Tutorial 4</span><span class="co">](04-actR.qmd)</span> does that after binning.</span>
-<span id="cb44-195"><a href="#cb44-195" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb44-196"><a href="#cb44-196" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-197"><a href="#cb44-197" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview plots</span></span>
-<span id="cb44-198"><a href="#cb44-198" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-199"><a href="#cb44-199" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeAvailabilityTs()`</span> shows how many records cover each time, grouped by archive. It puts every record on the scale given by <span class="in">`time.units`</span>, here years CE:</span>
-<span id="cb44-200"><a href="#cb44-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-201"><a href="#cb44-201" aria-hidden="true" tabindex="-1"></a><span class="in">```{r availability}</span></span>
-<span id="cb44-202"><a href="#cb44-202" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span>
-<span id="cb44-203"><a href="#cb44-203" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-204"><a href="#cb44-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-205"><a href="#cb44-205" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> combines the map and the availability plot:</span>
-<span id="cb44-206"><a href="#cb44-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-207"><a href="#cb44-207" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary, fig.height = 9}</span></span>
-<span id="cb44-208"><a href="#cb44-208" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
-<span id="cb44-209"><a href="#cb44-209" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-210"><a href="#cb44-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-211"><a href="#cb44-211" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> draws the figure as it runs. We assign the result so R doesn't also print a description of it.</span>
-<span id="cb44-212"><a href="#cb44-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-213"><a href="#cb44-213" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot one record</span></span>
-<span id="cb44-214"><a href="#cb44-214" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-215"><a href="#cb44-215" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTs()`</span> plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:</span>
-<span id="cb44-216"><a href="#cb44-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-217"><a href="#cb44-217" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-ts}</span></span>
-<span id="cb44-218"><a href="#cb44-218" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
-<span id="cb44-219"><a href="#cb44-219" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
-<span id="cb44-220"><a href="#cb44-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-221"><a href="#cb44-221" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb44-222"><a href="#cb44-222" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-223"><a href="#cb44-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-224"><a href="#cb44-224" aria-hidden="true" tabindex="-1"></a>It returns a ggplot2 object, so you can change the labels or theme as usual.</span>
-<span id="cb44-225"><a href="#cb44-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-226"><a href="#cb44-226" aria-hidden="true" tabindex="-1"></a><span class="fu">## Stacked timeseries plots</span></span>
-<span id="cb44-227"><a href="#cb44-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-228"><a href="#cb44-228" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeseriesStack()`</span> plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with <span class="in">`clipTime()`</span> (from <span class="in">`R/helpers.R`</span>). We use <span class="in">`h2k_ce`</span>, so that every <span class="in">`time`</span> is in years CE. <span class="in">`plotTimeseriesStack()`</span> plots <span class="in">`time`</span> by default, and labels the axis from its scale. Change <span class="in">`region`</span> to any acronym from the table above.</span>
-<span id="cb44-229"><a href="#cb44-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-230"><a href="#cb44-230" aria-hidden="true" tabindex="-1"></a><span class="in">```{r stack, fig.height = 9}</span></span>
-<span id="cb44-231"><a href="#cb44-231" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
-<span id="cb44-232"><a href="#cb44-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-233"><a href="#cb44-233" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb44-234"><a href="#cb44-234" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region, <span class="sc">!</span><span class="fu">is.na</span>(interpretation1_variable)) <span class="sc">|&gt;</span></span>
-<span id="cb44-235"><a href="#cb44-235" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-236"><a href="#cb44-236" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-237"><a href="#cb44-237" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
-<span id="cb44-238"><a href="#cb44-238" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
-<span id="cb44-239"><a href="#cb44-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-240"><a href="#cb44-240" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span>
-<span id="cb44-241"><a href="#cb44-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-242"><a href="#cb44-242" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
-<span id="cb44-243"><a href="#cb44-243" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
-<span id="cb44-244"><a href="#cb44-244" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
-<span id="cb44-245"><a href="#cb44-245" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span>
-<span id="cb44-246"><a href="#cb44-246" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb44-247"><a href="#cb44-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-248"><a href="#cb44-248" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
-<span id="cb44-249"><a href="#cb44-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-250"><a href="#cb44-250" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Map only one archive type, or color the map by <span class="in">`interpretation1_variable`</span>.</span>
-<span id="cb44-251"><a href="#cb44-251" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Pick another AR6 region and make its stack plot.</span>
-<span id="cb44-252"><a href="#cb44-252" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByCompilation()`</span> with a <span class="in">`version`</span> to compare membership between versions.</span>
-<span id="cb44-253"><a href="#cb44-253" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`D[["&lt;dataSetName&gt;"]]`</span> gets one dataset by name. Try <span class="in">`getTables()`</span> on its paleoData to see all its measurement tables.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "1. Loading, exploring, plotting and mapping"</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "lipdR and lipdViz"</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>This tutorial reads the Hydroclimate2k compilation into R, narrows it down to the records in the compilation, finds which IPCC AR6 region each record is in, and makes maps and timeseries plots. The later tutorials build on these steps.</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a><span class="fu">## Packages and helpers</span></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdR)    <span class="co"># read, extract and filter LiPD data</span></span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdViz)  <span class="co"># maps and plots</span></span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"R/helpers.R"</span>))</span>
+<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a><span class="fu">checkVersions</span>()</span>
+<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a><span class="in">`R/helpers.R`</span> holds a few small functions shared by all the tutorials. <span class="in">`checkVersions()`</span> stops with a message if any of the LiPD packages is too old.</span>
+<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a><span class="fu">## Read the compilation</span></span>
+<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a>The compilation is distributed as a zip file of LiPD files (one per dataset) on lipdverse.org. You can read it straight from the web:</span>
+<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read-url, eval = FALSE}</span></span>
+<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">1800</span>)  <span class="co"># it's about 280 MB, so allow more than R's default 60 s</span></span>
+<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">readLipd</span>(<span class="st">"https://lipdverse.org/export/downloads/hydroclimate2k/0_9_0/hydroclimate2k0_9_0.zip"</span>)</span>
+<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a>or from a copy you have downloaded. <span class="in">`readLipd()`</span> can't open a local zip file, so unzip it first and read the folder of <span class="in">`.lpd`</span> files:</span>
+<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read-local, eval = FALSE}</span></span>
+<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span>(<span class="st">"data/hydroclimate2k0_9_0.zip"</span>, <span class="at">exdir =</span> <span class="st">"data/hydroclimate2k0_9_0"</span>)</span>
+<span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">readLipd</span>(<span class="st">"data/hydroclimate2k0_9_0"</span>)</span>
+<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a>In these tutorials we use <span class="in">`getHydroclimate2k()`</span>, which does all of this once (download, unzip, read) and keeps a fast-loading copy in <span class="in">`data/`</span>:</span>
+<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-40"><a href="#cb47-40" aria-hidden="true" tabindex="-1"></a><span class="in">```{r read}</span></span>
+<span id="cb47-41"><a href="#cb47-41" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">getHydroclimate2k</span>()</span>
+<span id="cb47-42"><a href="#cb47-42" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(D)</span>
+<span id="cb47-43"><a href="#cb47-43" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-44"><a href="#cb47-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-45"><a href="#cb47-45" aria-hidden="true" tabindex="-1"></a><span class="in">`D`</span> is a *multi-LiPD* object: a named list with one element per dataset. Each dataset holds its metadata (<span class="in">`geo`</span>, <span class="in">`pub`</span>, <span class="in">`archiveType`</span>, ...) and its data tables (<span class="in">`paleoData`</span>, <span class="in">`chronData`</span>).</span>
+<span id="cb47-46"><a href="#cb47-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-47"><a href="#cb47-47" aria-hidden="true" tabindex="-1"></a><span class="in">```{r one-dataset}</span></span>
+<span id="cb47-48"><a href="#cb47-48" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(D)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
+<span id="cb47-49"><a href="#cb47-49" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> D[[<span class="dv">1</span>]]</span>
+<span id="cb47-50"><a href="#cb47-50" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>dataSetName</span>
+<span id="cb47-51"><a href="#cb47-51" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>archiveType</span>
+<span id="cb47-52"><a href="#cb47-52" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>geo<span class="sc">$</span>latitude</span>
+<span id="cb47-53"><a href="#cb47-53" aria-hidden="true" tabindex="-1"></a>L<span class="sc">$</span>geo<span class="sc">$</span>longitude</span>
+<span id="cb47-54"><a href="#cb47-54" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-55"><a href="#cb47-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-56"><a href="#cb47-56" aria-hidden="true" tabindex="-1"></a><span class="fu">## From datasets to timeseries</span></span>
+<span id="cb47-57"><a href="#cb47-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-58"><a href="#cb47-58" aria-hidden="true" tabindex="-1"></a>Most analyses work on *timeseries*: one variable (a column of a data table) together with its time axis and all the metadata above it. <span class="in">`extractTs()`</span> pulls every column out of every dataset, and <span class="in">`ts2tibble()`</span> turns the result into a data frame, one row per timeseries.</span>
+<span id="cb47-59"><a href="#cb47-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-60"><a href="#cb47-60" aria-hidden="true" tabindex="-1"></a><span class="in">```{r extract}</span></span>
+<span id="cb47-61"><a href="#cb47-61" aria-hidden="true" tabindex="-1"></a>TS <span class="ot">&lt;-</span> <span class="fu">extractTs</span>(D)</span>
+<span id="cb47-62"><a href="#cb47-62" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(TS)</span>
+<span id="cb47-63"><a href="#cb47-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-64"><a href="#cb47-64" aria-hidden="true" tabindex="-1"></a>ts_all <span class="ot">&lt;-</span> <span class="fu">ts2tibble</span>(TS)</span>
+<span id="cb47-65"><a href="#cb47-65" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ts_all)</span>
+<span id="cb47-66"><a href="#cb47-66" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-67"><a href="#cb47-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-68"><a href="#cb47-68" aria-hidden="true" tabindex="-1"></a>Most of those columns are not climate records: they are depths, ages, sample IDs, and variables that the curators did not choose for the compilation. Membership is recorded in each timeseries' <span class="in">`inCompilation`</span> fields, which list the compilations it belongs to and, for each, the versions it has been part of. <span class="in">`filterByCompilation()`</span> keeps the members.</span>
+<span id="cb47-69"><a href="#cb47-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-70"><a href="#cb47-70" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-compilation}</span></span>
+<span id="cb47-71"><a href="#cb47-71" aria-hidden="true" tabindex="-1"></a><span class="fu">filterByCompilation</span>(ts_all, <span class="st">"hydroclimate2k"</span>) <span class="sc">|&gt;</span> <span class="fu">nrow</span>()</span>
+<span id="cb47-72"><a href="#cb47-72" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-73"><a href="#cb47-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-74"><a href="#cb47-74" aria-hidden="true" tabindex="-1"></a>That includes a timeseries that was in earlier versions but left the compilation. To get exactly the members of the version we downloaded, give the version too. Versions are written with underscores, as in the file names (<span class="in">`h2k_version`</span> is <span class="in">`"0_9_0"`</span>):</span>
+<span id="cb47-75"><a href="#cb47-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-76"><a href="#cb47-76" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-version}</span></span>
+<span id="cb47-77"><a href="#cb47-77" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">filterByCompilation</span>(ts_all, <span class="st">"hydroclimate2k"</span>,</span>
+<span id="cb47-78"><a href="#cb47-78" aria-hidden="true" tabindex="-1"></a>                           <span class="at">version =</span> h2k_version, <span class="at">version.op =</span> <span class="st">"=="</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-79"><a href="#cb47-79" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">as_tibble</span>()</span>
+<span id="cb47-80"><a href="#cb47-80" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(h2k)</span>
+<span id="cb47-81"><a href="#cb47-81" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-82"><a href="#cb47-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-83"><a href="#cb47-83" aria-hidden="true" tabindex="-1"></a>::: callout-warning</span>
+<span id="cb47-84"><a href="#cb47-84" aria-hidden="true" tabindex="-1"></a><span class="fu">## Use underscores in the version</span></span>
+<span id="cb47-85"><a href="#cb47-85" aria-hidden="true" tabindex="-1"></a><span class="in">`version = "0.9.0"`</span> (with dots) currently matches nothing and returns an empty table without an error. Use <span class="in">`"0_9_0"`</span>.</span>
+<span id="cb47-86"><a href="#cb47-86" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb47-87"><a href="#cb47-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-88"><a href="#cb47-88" aria-hidden="true" tabindex="-1"></a>The <span class="in">`tibble::as_tibble()`</span> at the end turns lipdR's timeseries tibble into a plain tibble, which prints more compactly and works with all of dplyr.</span>
+<span id="cb47-89"><a href="#cb47-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-90"><a href="#cb47-90" aria-hidden="true" tabindex="-1"></a><span class="fu">## A first look</span></span>
+<span id="cb47-91"><a href="#cb47-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-92"><a href="#cb47-92" aria-hidden="true" tabindex="-1"></a>Count records by archive type:</span>
+<span id="cb47-93"><a href="#cb47-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-94"><a href="#cb47-94" aria-hidden="true" tabindex="-1"></a><span class="in">```{r archive-counts}</span></span>
+<span id="cb47-95"><a href="#cb47-95" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-96"><a href="#cb47-96" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-97"><a href="#cb47-97" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-98"><a href="#cb47-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-99"><a href="#cb47-99" aria-hidden="true" tabindex="-1"></a>What variables are there?</span>
+<span id="cb47-100"><a href="#cb47-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-101"><a href="#cb47-101" aria-hidden="true" tabindex="-1"></a><span class="in">```{r variables}</span></span>
+<span id="cb47-102"><a href="#cb47-102" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-103"><a href="#cb47-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(paleoData_variableName, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-104"><a href="#cb47-104" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
+<span id="cb47-105"><a href="#cb47-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-106"><a href="#cb47-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-107"><a href="#cb47-107" aria-hidden="true" tabindex="-1"></a><span class="in">`queryTs()`</span> and <span class="in">`filterTs()`</span> select timeseries with a simple expression, for example <span class="in">`filterTs(TS, "archiveType == Speleothem")`</span>. With a tibble, <span class="in">`dplyr::filter()`</span> does the same job, and that is what we use here.</span>
+<span id="cb47-108"><a href="#cb47-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-109"><a href="#cb47-109" aria-hidden="true" tabindex="-1"></a><span class="fu">## Interpretations</span></span>
+<span id="cb47-110"><a href="#cb47-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-111"><a href="#cb47-111" aria-hidden="true" tabindex="-1"></a>An interpretation says what a record is a measure of. Each record can have several, numbered (<span class="in">`interpretation1_variable`</span>, <span class="in">`interpretation2_variable`</span>, ...), and each has a <span class="in">`scope`</span>: **climate** (the climate variable the record reflects), **isotope** (what controls an isotope value, such as the d18O of precipitation) or **environment** (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the <span class="in">`interpretation1_`</span> columns don't tell the whole story.</span>
+<span id="cb47-112"><a href="#cb47-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-113"><a href="#cb47-113" aria-hidden="true" tabindex="-1"></a><span class="in">`getInterpretations()`</span> lists them with one row per interpretation. <span class="in">`variable`</span> is what the record is interpreted as, and <span class="in">`direction`</span> says whether larger values mean more or less of it:</span>
+<span id="cb47-114"><a href="#cb47-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-115"><a href="#cb47-115" aria-hidden="true" tabindex="-1"></a><span class="in">```{r interpretations}</span></span>
+<span id="cb47-116"><a href="#cb47-116" aria-hidden="true" tabindex="-1"></a>interp <span class="ot">&lt;-</span> <span class="fu">getInterpretations</span>(h2k)</span>
+<span id="cb47-117"><a href="#cb47-117" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(interp, scope)</span>
+<span id="cb47-118"><a href="#cb47-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-119"><a href="#cb47-119" aria-hidden="true" tabindex="-1"></a>interp <span class="sc">|&gt;</span></span>
+<span id="cb47-120"><a href="#cb47-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(scope <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-121"><a href="#cb47-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(variable, direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-122"><a href="#cb47-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
+<span id="cb47-123"><a href="#cb47-123" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-124"><a href="#cb47-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-125"><a href="#cb47-125" aria-hidden="true" tabindex="-1"></a>The vocabulary isn't fully standardized yet ("precipitation", "Precipitation amount", "Precipitation index", ...), which is a curation to-do.</span>
+<span id="cb47-126"><a href="#cb47-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-127"><a href="#cb47-127" aria-hidden="true" tabindex="-1"></a><span class="in">`filterByInterpretation()`</span> selects records by their interpretations. Conditions are checked within one interpretation, so this keeps records with an interpretation that is both precipitation and positive (named arguments match any of their values, ignoring case):</span>
+<span id="cb47-128"><a href="#cb47-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-129"><a href="#cb47-129" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-named}</span></span>
+<span id="cb47-130"><a href="#cb47-130" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-131"><a href="#cb47-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="at">variable =</span> <span class="st">"precipitation"</span>, <span class="at">direction =</span> <span class="st">"positive"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-132"><a href="#cb47-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-133"><a href="#cb47-133" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-134"><a href="#cb47-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-135"><a href="#cb47-135" aria-hidden="true" tabindex="-1"></a>Unnamed conditions are R expressions, evaluated on the rows of <span class="in">`getInterpretations()`</span>, so you can use any logic. Here <span class="in">`grepl()`</span> catches all the PDSI variants ("PDSI", "scPDSI"), and <span class="in">`scope = "climate"`</span> looks only at climate interpretations (a missing scope counts as climate):</span>
+<span id="cb47-136"><a href="#cb47-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-137"><a href="#cb47-137" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-expr}</span></span>
+<span id="cb47-138"><a href="#cb47-138" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-139"><a href="#cb47-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">grepl</span>(<span class="st">"pdsi"</span>, variable, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-140"><a href="#cb47-140" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-141"><a href="#cb47-141" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-142"><a href="#cb47-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-143"><a href="#cb47-143" aria-hidden="true" tabindex="-1"></a><span class="in">`match`</span> sets how a record's interpretations combine: <span class="in">`"any"`</span> (the default) keeps a record if any of them matches, <span class="in">`"primary"`</span> only if its top one does (lowest <span class="in">`rank`</span>, or else the lowest number), <span class="in">`"all"`</span> if all of them do, and <span class="in">`"none"`</span> if none does. Tutorials 2 and 4 use <span class="in">`filterByInterpretation()`</span> to choose the records interpreted as moisture.</span>
+<span id="cb47-144"><a href="#cb47-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-145"><a href="#cb47-145" aria-hidden="true" tabindex="-1"></a><span class="fu">## IPCC AR6 regions</span></span>
+<span id="cb47-146"><a href="#cb47-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-147"><a href="#cb47-147" aria-hidden="true" tabindex="-1"></a>None of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so <span class="in">`R/helpers.R`</span> provides two helpers: <span class="in">`getAr6Regions()`</span> reads the region polygons, and <span class="in">`addAr6Region()`</span> adds the region of each record with a point-in-polygon test (<span class="in">`sf`</span>).</span>
+<span id="cb47-148"><a href="#cb47-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-149"><a href="#cb47-149" aria-hidden="true" tabindex="-1"></a><span class="in">```{r ar6}</span></span>
+<span id="cb47-150"><a href="#cb47-150" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
+<span id="cb47-151"><a href="#cb47-151" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
+<span id="cb47-152"><a href="#cb47-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-153"><a href="#cb47-153" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-154"><a href="#cb47-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-155"><a href="#cb47-155" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
+<span id="cb47-156"><a href="#cb47-156" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-157"><a href="#cb47-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-158"><a href="#cb47-158" aria-hidden="true" tabindex="-1"></a>Which regions have both lake and speleothem records?</span>
+<span id="cb47-159"><a href="#cb47-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-160"><a href="#cb47-160" aria-hidden="true" tabindex="-1"></a><span class="in">```{r region-archive}</span></span>
+<span id="cb47-161"><a href="#cb47-161" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-162"><a href="#cb47-162" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
+<span id="cb47-163"><a href="#cb47-163" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
+<span id="cb47-164"><a href="#cb47-164" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-165"><a href="#cb47-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span>
+<span id="cb47-166"><a href="#cb47-166" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-167"><a href="#cb47-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-168"><a href="#cb47-168" aria-hidden="true" tabindex="-1"></a><span class="fu">## Maps</span></span>
+<span id="cb47-169"><a href="#cb47-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-170"><a href="#cb47-170" aria-hidden="true" tabindex="-1"></a><span class="in">`mapTs()`</span> maps a set of timeseries, colored by any column. Here we color by archive type.</span>
+<span id="cb47-171"><a href="#cb47-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-172"><a href="#cb47-172" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-archive, fig.height = 6}</span></span>
+<span id="cb47-173"><a href="#cb47-173" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
+<span id="cb47-174"><a href="#cb47-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-175"><a href="#cb47-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-176"><a href="#cb47-176" aria-hidden="true" tabindex="-1"></a><span class="in">`mapLipd()`</span> maps datasets instead of timeseries:</span>
+<span id="cb47-177"><a href="#cb47-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-178"><a href="#cb47-178" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-lipd, fig.height = 6}</span></span>
+<span id="cb47-179"><a href="#cb47-179" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb47-180"><a href="#cb47-180" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-181"><a href="#cb47-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-182"><a href="#cb47-182" aria-hidden="true" tabindex="-1"></a>Both return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region's boundaries fall:</span>
+<span id="cb47-183"><a href="#cb47-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-184"><a href="#cb47-184" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-regions, fig.height = 6}</span></span>
+<span id="cb47-185"><a href="#cb47-185" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb47-186"><a href="#cb47-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span>
+<span id="cb47-187"><a href="#cb47-187" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-188"><a href="#cb47-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-189"><a href="#cb47-189" aria-hidden="true" tabindex="-1"></a><span class="fu">## Time axes</span></span>
+<span id="cb47-190"><a href="#cb47-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-191"><a href="#cb47-191" aria-hidden="true" tabindex="-1"></a>Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:</span>
+<span id="cb47-192"><a href="#cb47-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-193"><a href="#cb47-193" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeUnits`</span>: e.g. "yr AD", "yr BP" or "ka"</span>
+<span id="cb47-194"><a href="#cb47-194" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDatum`</span>: the year CE of time zero (0 for CE, 1950 for BP)</span>
+<span id="cb47-195"><a href="#cb47-195" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDirection`</span>: "prograde" if time counts forward (year CE), "retrograde" if it counts back (yr BP)</span>
+<span id="cb47-196"><a href="#cb47-196" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeExponent`</span>: 0 for years, 3 for ka (thousands of years)</span>
+<span id="cb47-197"><a href="#cb47-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-198"><a href="#cb47-198" aria-hidden="true" tabindex="-1"></a><span class="in">`extractTs()`</span> also gives every timeseries a <span class="in">`time`</span> column: a copy of its primary time column, which <span class="in">`timeVariableName`</span> names (usually <span class="in">`age`</span> or <span class="in">`year`</span>). <span class="in">`timeSource`</span> says how its scale is known: from the file's metadata, from its units, or "assumed" when the units don't say.</span>
+<span id="cb47-199"><a href="#cb47-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-200"><a href="#cb47-200" aria-hidden="true" tabindex="-1"></a><span class="in">```{r time-meta}</span></span>
+<span id="cb47-201"><a href="#cb47-201" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-202"><a href="#cb47-202" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span>
+<span id="cb47-203"><a href="#cb47-203" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-204"><a href="#cb47-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-205"><a href="#cb47-205" aria-hidden="true" tabindex="-1"></a>Those few "assumed" records have time units that lipdR doesn't recognize (for example "count/yr"), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it's worth checking.</span>
+<span id="cb47-206"><a href="#cb47-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-207"><a href="#cb47-207" aria-hidden="true" tabindex="-1"></a>With this information, lipdR converts between any two scales. <span class="in">`convertTime()`</span> converts numbers:</span>
+<span id="cb47-208"><a href="#cb47-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-209"><a href="#cb47-209" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-time}</span></span>
+<span id="cb47-210"><a href="#cb47-210" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
+<span id="cb47-211"><a href="#cb47-211" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
+<span id="cb47-212"><a href="#cb47-212" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-213"><a href="#cb47-213" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-214"><a href="#cb47-214" aria-hidden="true" tabindex="-1"></a>and <span class="in">`convertTsTime()`</span> converts the <span class="in">`time`</span> of every record, and updates the metadata:</span>
+<span id="cb47-215"><a href="#cb47-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-216"><a href="#cb47-216" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-ts-time}</span></span>
+<span id="cb47-217"><a href="#cb47-217" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
+<span id="cb47-218"><a href="#cb47-218" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb47-219"><a href="#cb47-219" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span>
+<span id="cb47-220"><a href="#cb47-220" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-221"><a href="#cb47-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-222"><a href="#cb47-222" aria-hidden="true" tabindex="-1"></a>The original <span class="in">`age`</span> and <span class="in">`year`</span> columns stay as they were. lipdViz, compositeR and actR all read <span class="in">`time`</span> and its scale, so you usually don't need to convert anything yourself: you tell each function which scale you want with <span class="in">`time.units`</span>. They also take <span class="in">`time.variable`</span>, to use another time column, such as <span class="in">`age`</span> when <span class="in">`time`</span> is <span class="in">`year`</span>. <span class="in">`h2kTimeseries()`</span> in <span class="in">`R/helpers.R`</span>, which the later tutorials use, returns every record with <span class="in">`time`</span> in years CE.</span>
+<span id="cb47-223"><a href="#cb47-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-224"><a href="#cb47-224" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
+<span id="cb47-225"><a href="#cb47-225" aria-hidden="true" tabindex="-1"></a><span class="fu">## If you change `time`</span></span>
+<span id="cb47-226"><a href="#cb47-226" aria-hidden="true" tabindex="-1"></a>Because <span class="in">`time`</span> is a copy of its source column, lipdR checks that they still agree. If you edit <span class="in">`time`</span> but not the source column, <span class="in">`getTsTime()`</span> (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (<span class="in">`clipTime()`</span> in <span class="in">`R/helpers.R`</span> clips every column), or set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, which makes <span class="in">`time`</span> its own source. <span class="co">[</span><span class="ot">Tutorial 4</span><span class="co">](04-actR.qmd)</span> does that after binning.</span>
+<span id="cb47-227"><a href="#cb47-227" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb47-228"><a href="#cb47-228" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-229"><a href="#cb47-229" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview plots</span></span>
+<span id="cb47-230"><a href="#cb47-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-231"><a href="#cb47-231" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeAvailabilityTs()`</span> shows how many records cover each time, grouped by archive. It puts every record on the scale given by <span class="in">`time.units`</span>, here years CE:</span>
+<span id="cb47-232"><a href="#cb47-232" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-233"><a href="#cb47-233" aria-hidden="true" tabindex="-1"></a><span class="in">```{r availability}</span></span>
+<span id="cb47-234"><a href="#cb47-234" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span>
+<span id="cb47-235"><a href="#cb47-235" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-236"><a href="#cb47-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-237"><a href="#cb47-237" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> combines the map and the availability plot:</span>
+<span id="cb47-238"><a href="#cb47-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-239"><a href="#cb47-239" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary, fig.height = 9}</span></span>
+<span id="cb47-240"><a href="#cb47-240" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
+<span id="cb47-241"><a href="#cb47-241" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-242"><a href="#cb47-242" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-243"><a href="#cb47-243" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> draws the figure as it runs. We assign the result so R doesn't also print a description of it.</span>
+<span id="cb47-244"><a href="#cb47-244" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-245"><a href="#cb47-245" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot one record</span></span>
+<span id="cb47-246"><a href="#cb47-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-247"><a href="#cb47-247" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTs()`</span> plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:</span>
+<span id="cb47-248"><a href="#cb47-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-249"><a href="#cb47-249" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-ts}</span></span>
+<span id="cb47-250"><a href="#cb47-250" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-251"><a href="#cb47-251" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
+<span id="cb47-252"><a href="#cb47-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-253"><a href="#cb47-253" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-254"><a href="#cb47-254" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-255"><a href="#cb47-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-256"><a href="#cb47-256" aria-hidden="true" tabindex="-1"></a>It returns a ggplot2 object, so you can change the labels or theme as usual.</span>
+<span id="cb47-257"><a href="#cb47-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-258"><a href="#cb47-258" aria-hidden="true" tabindex="-1"></a><span class="fu">## Stacked timeseries plots</span></span>
+<span id="cb47-259"><a href="#cb47-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-260"><a href="#cb47-260" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeseriesStack()`</span> plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with <span class="in">`clipTime()`</span> (from <span class="in">`R/helpers.R`</span>). We use <span class="in">`h2k_ce`</span>, so that every <span class="in">`time`</span> is in years CE. <span class="in">`plotTimeseriesStack()`</span> plots <span class="in">`time`</span> by default, and labels the axis from its scale. Change <span class="in">`region`</span> to any acronym from the table above.</span>
+<span id="cb47-261"><a href="#cb47-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-262"><a href="#cb47-262" aria-hidden="true" tabindex="-1"></a><span class="in">```{r stack, fig.height = 9}</span></span>
+<span id="cb47-263"><a href="#cb47-263" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
+<span id="cb47-264"><a href="#cb47-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-265"><a href="#cb47-265" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb47-266"><a href="#cb47-266" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span></span>
+<span id="cb47-267"><a href="#cb47-267" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="sc">!</span><span class="fu">is.na</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-268"><a href="#cb47-268" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-269"><a href="#cb47-269" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-270"><a href="#cb47-270" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-271"><a href="#cb47-271" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
+<span id="cb47-272"><a href="#cb47-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-273"><a href="#cb47-273" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span>
+<span id="cb47-274"><a href="#cb47-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-275"><a href="#cb47-275" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
+<span id="cb47-276"><a href="#cb47-276" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
+<span id="cb47-277"><a href="#cb47-277" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb47-278"><a href="#cb47-278" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span>
+<span id="cb47-279"><a href="#cb47-279" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb47-280"><a href="#cb47-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-281"><a href="#cb47-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
+<span id="cb47-282"><a href="#cb47-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-283"><a href="#cb47-283" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Map only one archive type, or color the map by <span class="in">`interpretation1_variable`</span>.</span>
+<span id="cb47-284"><a href="#cb47-284" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByInterpretation()`</span> to find the records interpreted as temperature, and map them. How many have temperature as their primary interpretation (<span class="in">`match = "primary"`</span>)?</span>
+<span id="cb47-285"><a href="#cb47-285" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Pick another AR6 region and make its stack plot.</span>
+<span id="cb47-286"><a href="#cb47-286" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByCompilation()`</span> with a <span class="in">`version`</span> to compare membership between versions.</span>
+<span id="cb47-287"><a href="#cb47-287" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`D[["&lt;dataSetName&gt;"]]`</span> gets one dataset by name. Try <span class="in">`getTables()`</span> on its paleoData to see all its measurement tables.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 <footer class="footer">

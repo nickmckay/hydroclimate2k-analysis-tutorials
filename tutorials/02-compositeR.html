@@ -483,21 +483,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="choose-the-records" class="level2">
 <h2 class="anchored" data-anchor-id="choose-the-records">Choose the records</h2>
 <p>A composite only makes sense if the records measure the same thing, and if they all point the same way. Hydroclimate2k records are interpreted as many different variables (precipitation, streamflow, P/E, PDSI, lake level, …), and a large value means “wetter” for some and “drier” for others. For example, lake-water d18O usually rises when evaporation exceeds precipitation.</p>
-<p>Two pieces of metadata handle this. <code>interpretation1_variable</code> says what a record measures, and <code>interpretation1_direction</code> says whether larger values mean more or less of it.</p>
-<p>First, choose the records that measure moisture. <code>isMoisture()</code> (in <code>R/helpers.R</code>) is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:</p>
+<p>The interpretations handle this (see <a href="../tutorials/01-load-plot-map.html#interpretations">tutorial 1</a>): <code>variable</code> says what a record measures, and <code>direction</code> says whether larger values mean more or less of it.</p>
+<p>First, choose the records that measure moisture. The interpretation vocabulary isn’t standardized yet, so <code>isMoisture()</code> (in <code>R/helpers.R</code>) recognizes the variants. It is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">isMoisture</span>(<span class="fu">c</span>(<span class="st">"streamflow"</span>, <span class="st">"P/E"</span>, <span class="st">"precipitation"</span>, <span class="st">"temperature"</span>, <span class="st">"precipitationIsotope"</span>, <span class="cn">NA</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">isMoisture</span>(<span class="fu">c</span>(<span class="st">"streamflow"</span>, <span class="st">"P/E"</span>, <span class="st">"Precipitation amount"</span>, <span class="st">"temperature"</span>, <span class="st">"precipitationIsotope"</span>, <span class="cn">NA</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1]  TRUE  TRUE  TRUE FALSE FALSE FALSE</code></pre>
 </div>
 </div>
+<p><code>lipdR::filterByInterpretation()</code> applies it to each record’s interpretations. We want the records whose main climate interpretation is moisture, so we look only at climate-scoped interpretations (<code>scope = "climate"</code>), and only at the top one of those (<code>match = "primary"</code>). With the default, <code>match = "any"</code>, a record whose second climate interpretation mentions moisture would be included too.</p>
 <p>Then the direction. <code>compositeR::interpDirectionSign()</code> reads a record’s interpretation direction and returns +1 if larger values mean more of the variable, -1 if they mean less, and <code>NA</code> if the direction is missing or ambiguous. It accepts “positive”/“negative” and “increase”/“decrease” in any capitalization.</p>
 <p>Ideally, all the directions would be “positive” or “negative”, a curation to-do.</p>
 <p>Select the region’s moisture records, one per dataset, and keep the Common Era:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span> <span class="co">#Start with the full tibble</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span> <span class="co">#filter to this region</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">isMoisture</span>(interpretation1_variable)) <span class="sc">|&gt;</span> <span class="co">#keep records interpreted as moisture</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">isMoisture</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>, <span class="at">match =</span> <span class="st">"primary"</span>) <span class="sc">|&gt;</span> <span class="co">#keep records interpreted as moisture</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span> <span class="co">#+1 or -1</span></span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span> <span class="co">#drop records without a usable direction</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="co">#drop duplicates</span></span>
@@ -515,7 +516,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>Records can carry several interpretations, each with a <code>scope</code> (climate, environment, isotope). <code>interpDirectionSign()</code> uses the climate-scoped one by default. Abbott.Hiner.2016 shows why that matters: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1.</p>
+<p>The table shows the <code>interpretation1_</code> columns, but the scope matters. <code>interpDirectionSign()</code> also uses the climate-scoped interpretation by default. Abbott.Hiner.2016 shows why: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1. <code>getInterpretations()</code> shows all of a record’s interpretations:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">getInterpretations</span>(<span class="fu">filter</span>(recs, dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, number, scope, variable, direction)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div data-pagedtable="false">
+  <script data-pagedtable-source="" type="application/json">
+{"columns":[{"label":["dataSetName"],"name":[1],"type":["chr"],"align":["left"]},{"label":["number"],"name":[2],"type":["int"],"align":["right"]},{"label":["scope"],"name":[3],"type":["chr"],"align":["left"]},{"label":["variable"],"name":[4],"type":["chr"],"align":["left"]},{"label":["direction"],"name":[5],"type":["chr"],"align":["left"]}],"data":[{"1":"Abbott.Hiner.2016","2":"1","3":"environment","4":"winter climate wetness and/or runoff intensity","5":"NA"},{"1":"Abbott.Hiner.2016","2":"2","3":"climate","4":"winter precipitation","5":"positive"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+</div>
+</div>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -530,8 +542,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>lipdViz<span class="sc">::</span><span class="fu">mapTs</span>(recs, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">4</span>,</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">lat.range =</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">55</span>), <span class="at">lon.range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">130</span>, <span class="sc">-</span><span class="dv">100</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>lipdViz<span class="sc">::</span><span class="fu">mapTs</span>(recs, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">4</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">lat.range =</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">55</span>), <span class="at">lon.range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">130</span>, <span class="sc">-</span><span class="dv">100</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -560,18 +572,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Average</strong> the standardized records in each bin.</li>
 </ol>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2000</span>, <span class="at">by =</span> <span class="dv">20</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(recs,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2000</span>, <span class="at">by =</span> <span class="dv">20</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(recs,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>nens = 50</code> keeps this quick. Use several hundred for real work.</p>
 <p>The standard deviation behind <code>uncUnits = "sd"</code> is the SD of each whole record, over the years we kept. A record with a large trend has a large SD, so it gets more noise. If you know a record’s measurement or calibration uncertainty, put it in a column and name that column in <code>uncVar</code> instead (in the record’s own units).</p>
@@ -594,17 +606,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="plot-it">Plot it</h2>
 <p><code>plotComposite()</code> draws the composite’s ensemble as quantile ribbons, plus how many records contribute to each bin. The composite knows its time scale (<code>comp$timeUnits</code>), so <code>plotComposite(comp)</code> gives a forward year CE axis. Here we take the two panels separately (<code>combine = FALSE</code>), so that we can give them matching axes and labels:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">plotComposite</span>(comp, <span class="at">combine =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>ce_axis <span class="ot">&lt;-</span> <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>))</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>egg<span class="sc">::</span><span class="fu">ggarrange</span>(</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>compositeEns <span class="sc">+</span> ce_axis <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>) <span class="sc">+</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>),</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>dataUsed <span class="sc">+</span> ce_axis,</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>),</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">top =</span> <span class="fu">paste</span>(region, <span class="st">"moisture composite"</span>)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">plotComposite</span>(comp, <span class="at">combine =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>ce_axis <span class="ot">&lt;-</span> <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>egg<span class="sc">::</span><span class="fu">ggarrange</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>compositeEns <span class="sc">+</span> ce_axis <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>) <span class="sc">+</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>),</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>dataUsed <span class="sc">+</span> ce_axis,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">top =</span> <span class="fu">paste</span>(region, <span class="st">"moisture composite"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -615,12 +627,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p><code>summary()</code> gives the composite’s quantiles in each bin:</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>comp_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(comp)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(comp_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>comp_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(comp)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(comp_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div data-pagedtable="false">
   <script data-pagedtable-source="" type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["age"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["q2.5"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["q50"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["q97.5"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["nProxy"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"10","2":"-0.6998385","3":"0.05499895","4":"0.9684022","5":"7","_rn_":"1"},{"1":"30","2":"-0.6493656","3":"0.12691809","4":"0.7277841","5":"8","_rn_":"2"},{"1":"50","2":"-0.4246837","3":"0.11218864","4":"0.6932588","5":"8","_rn_":"3"},{"1":"70","2":"-0.8474126","3":"-0.27795401","4":"0.5048649","5":"8","_rn_":"4"},{"1":"90","2":"-0.7050028","3":"-0.09252553","4":"0.7017008","5":"8","_rn_":"5"},{"1":"110","2":"-0.3039023","3":"0.24095242","4":"1.0105377","5":"8","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["age"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["q2.5"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["q50"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["q97.5"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["nProxy"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"10","2":"-0.5833307","3":"0.18545595","4":"1.0741016","5":"7","_rn_":"1"},{"1":"30","2":"-0.4259683","3":"0.33691112","4":"1.0178124","5":"8","_rn_":"2"},{"1":"50","2":"-0.6100347","3":"-0.05981923","4":"0.5172736","5":"8","_rn_":"3"},{"1":"70","2":"-0.6194609","3":"0.07798053","4":"0.7359043","5":"8","_rn_":"4"},{"1":"90","2":"-0.5404693","3":"0.03633478","4":"0.7615041","5":"8","_rn_":"5"},{"1":"110","2":"-0.4746505","3":"0.11437562","4":"0.9210714","5":"8","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
@@ -631,37 +643,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="does-every-archive-agree">Does every archive agree?</h2>
 <p>A useful check is to composite each archive on its own. If trees and lakes tell different stories, that is worth understanding before you trust the combined result.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>by_archive <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="st">"Wood"</span>, <span class="st">"LakeSediment"</span>), <span class="cf">function</span>(a) {</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  sub <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, archiveType <span class="sc">==</span> a)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  ca <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(sub,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(ca)</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  s<span class="sc">$</span>archive <span class="ot">&lt;-</span> <span class="fu">paste0</span>(a, <span class="st">" (n = "</span>, <span class="fu">nrow</span>(sub), <span class="st">")"</span>)</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  s</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>by_archive <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="st">"Wood"</span>, <span class="st">"LakeSediment"</span>), <span class="cf">function</span>(a) {</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  sub <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, archiveType <span class="sc">==</span> a)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  ca <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(sub,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(ca)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  s<span class="sc">$</span>archive <span class="ot">&lt;-</span> <span class="fu">paste0</span>(a, <span class="st">" (n = "</span>, <span class="fu">nrow</span>(sub), <span class="st">")"</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  s</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>binning and aligning the data. This may take some time depending on the number of records (n = 17) and number of ensembles (n = 50)
 binning and aligning the data. This may take some time depending on the number of records (n = 8) and number of ensembles (n = 50)</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(by_archive)[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"lo"</span>, <span class="st">"med"</span>, <span class="st">"hi"</span>)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(by_archive, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> archive, <span class="at">color =</span> archive)) <span class="sc">+</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo, <span class="at">ymax =</span> hi), <span class="at">alpha =</span> <span class="fl">0.25</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> med)) <span class="sc">+</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(by_archive)[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"lo"</span>, <span class="st">"med"</span>, <span class="st">"hi"</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(by_archive, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> archive, <span class="at">color =</span> archive)) <span class="sc">+</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo, <span class="at">ymax =</span> hi), <span class="at">alpha =</span> <span class="fl">0.25</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> med)) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1261,193 +1273,200 @@ binning and aligning the data. This may take some time depending on the number o
   <script type="application/javascript">
   window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "2. Regional composites with compositeR"</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "A moisture composite for western North America"</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>A composite averages many records into one regional series. Done carefully, it keeps the shared signal, reduces the noise of individual records, and carries the uncertainties of the inputs through to the result. compositeR does this with ensembles: it repeats the whole bin, standardize and average procedure many times, each time drawing different age models and proxy values, so the spread of the results shows the uncertainty.</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>Here we build a composite of moisture-sensitive records from the IPCC AR6 region **WNA** (western North America), for the Common Era. The region is set in one place, so you can rerun everything for another region.</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">## Setup</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdR)</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(compositeR)</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"R/helpers.R"</span>))</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="fu">checkVersions</span>()</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="in">`h2kTimeseries()`</span> does the steps from <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](01-load-plot-map.qmd)</span> in one call: read the compilation, keep the 0.9.0 members, add AR6 regions, and put every record's <span class="in">`time`</span> in years CE.</span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="in">```{r load}</span></span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">h2kTimeseries</span>()</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(h2k)</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">## Choose the records</span></span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>A composite only makes sense if the records measure the same thing, and if they all point the same way. Hydroclimate2k records are interpreted as many different variables (precipitation, streamflow, P/E, PDSI, lake level, ...), and a large value means "wetter" for some and "drier" for others. For example, lake-water d18O usually rises when evaporation exceeds precipitation.</span>
-<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>Two pieces of metadata handle this. <span class="in">`interpretation1_variable`</span> says what a record measures, and <span class="in">`interpretation1_direction`</span> says whether larger values mean more or less of it.</span>
-<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>First, choose the records that measure moisture. <span class="in">`isMoisture()`</span> (in <span class="in">`R/helpers.R`</span>) is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:</span>
-<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="in">```{r is-moisture}</span></span>
-<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a><span class="fu">isMoisture</span>(<span class="fu">c</span>(<span class="st">"streamflow"</span>, <span class="st">"P/E"</span>, <span class="st">"precipitation"</span>, <span class="st">"temperature"</span>, <span class="st">"precipitationIsotope"</span>, <span class="cn">NA</span>))</span>
-<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>Then the direction. <span class="in">`compositeR::interpDirectionSign()`</span> reads a record's interpretation direction and returns +1 if larger values mean more of the variable, -1 if they mean less, and <span class="in">`NA`</span> if the direction is missing or ambiguous. It accepts "positive"/"negative" and "increase"/"decrease" in any capitalization.</span>
-<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>Ideally, all the directions would be "positive" or "negative", a curation to-do.</span>
-<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>Select the region's moisture records, one per dataset, and keep the Common Era:</span>
-<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="in">```{r select}</span></span>
-<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span> <span class="co">#Start with the full tibble</span></span>
-<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span> <span class="co">#filter to this region</span></span>
-<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">isMoisture</span>(interpretation1_variable)) <span class="sc">|&gt;</span> <span class="co">#keep records interpreted as moisture</span></span>
-<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span> <span class="co">#+1 or -1</span></span>
-<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span> <span class="co">#drop records without a usable direction</span></span>
-<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="co">#drop duplicates</span></span>
-<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2000</span>) <span class="sc">|&gt;</span></span>
-<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="co">#only look at those with more than 20 datapoints in the interval</span></span>
-<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>recs <span class="sc">|&gt;</span></span>
-<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, archiveType, paleoData_variableName,</span>
-<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>         interpretation1_variable, interpretation1_direction, direction)</span>
-<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>Records can carry several interpretations, each with a <span class="in">`scope`</span> (climate, environment, isotope). <span class="in">`interpDirectionSign()`</span> uses the climate-scoped one by default. Abbott.Hiner.2016 shows why that matters: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1.</span>
-<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>::: callout-important</span>
-<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a><span class="fu">## Look at what you're compositing</span></span>
-<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a><span class="in">`isMoisture()`</span> is a convenience for handling our currently imperfect metadata. It's not ideal. Read the table above, and check the interpretations of any record you aren't sure about. Watch out for drought indices: "drought, positive" means larger values are drier, so <span class="in">`isMoisture()`</span> leaves them out rather than let them point the wrong way. </span>
-<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map, fig.height = 5}</span></span>
-<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>lipdViz<span class="sc">::</span><span class="fu">mapTs</span>(recs, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">4</span>,</span>
-<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>               <span class="at">lat.range =</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">55</span>), <span class="at">lon.range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">130</span>, <span class="sc">-</span><span class="dv">100</span>))</span>
-<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a><span class="fu">## Records in different units</span></span>
-<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a>The records are in different units (mm of streamflow, permil, tree-ring indices), some were dated in yr BP and some in years CE, and half of them point the "wrong" way. We don't need to fix any of this before compositing:</span>
-<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Units:** the standardization step (below) puts every record in standard-deviation units, and we give the uncertainty in standard deviations too (<span class="in">`uncUnits = "sd"`</span>).</span>
-<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Time:** <span class="in">`compositeEnsembles()`</span> reads each record's <span class="in">`time`</span> and its scale, and puts it on the scale given by <span class="in">`time.units`</span>. Here that's <span class="in">`"CE"`</span>, so <span class="in">`binvec`</span> is in years CE. (Without <span class="in">`time.units`</span>, it uses the scale the records share, or yr BP if they differ.)</span>
-<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Direction:** <span class="in">`compositeEnsembles()`</span> flips records with a negative direction when <span class="in">`alignInterpDirection = TRUE`</span> (the default), using <span class="in">`interpDirectionSign()`</span>.</span>
-<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a>It also takes the tibble directly. You can pass a lipdR timeseries list from <span class="in">`extractTs()`</span> instead.</span>
-<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a><span class="fu">## Build the composite</span></span>
-<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a><span class="in">`compositeEnsembles()`</span> repeats these steps <span class="in">`nens`</span> times:</span>
-<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Bin** each record onto a common time axis (<span class="in">`binvec`</span>). The default <span class="in">`binFun`</span>, <span class="in">`sampleEnsembleThenBinTs()`</span>, first perturbs each record: it adds autocorrelated noise to the values (<span class="in">`uncVar = 0.5`</span> with <span class="in">`uncUnits = "sd"`</span>: half of each record's standard deviation, whatever its units), and it simulates age uncertainty with the Banded Age Model (BAM), except for tree rings and documents, whose ages are exact. Records with a negative interpretation direction are flipped at this step.</span>
-<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Standardize** the binned records with <span class="in">`stanFun`</span>. Here <span class="in">`standardizeOverInterval()`</span> gives every record mean 0 and standard deviation 1 over 1600 to 1950 CE, a period all the records cover.</span>
-<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Average** the standardized records in each bin.</span>
-<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a><span class="in">```{r composite, results = "hide"}</span></span>
-<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2000</span>, <span class="at">by =</span> <span class="dv">20</span>)</span>
-<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
-<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(recs,</span>
-<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
-<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
-<span id="cb14-101"><a href="#cb14-101" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb14-102"><a href="#cb14-102" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
-<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
-<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
-<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
-<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-107"><a href="#cb14-107" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-108"><a href="#cb14-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a><span class="in">`nens = 50`</span> keeps this quick. Use several hundred for real work.</span>
-<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a>The standard deviation behind <span class="in">`uncUnits = "sd"`</span> is the SD of each whole record, over the years we kept. A record with a large trend has a large SD, so it gets more noise. If you know a record's measurement or calibration uncertainty, put it in a column and name that column in <span class="in">`uncVar`</span> instead (in the record's own units).</span>
-<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
-<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a><span class="fu">## About the age uncertainty</span></span>
-<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a>BAM was designed for layer-counted records, such as corals and varves. For radiometrically dated lake and speleothem records it gives only a rough idea of age uncertainty. If a record has an age ensemble (see <span class="co">[</span><span class="ot">tutorial 3</span><span class="co">](03-geoChronR.qmd)</span>), put it in an <span class="in">`ageEnsemble`</span> column (yr BP, as a matrix), and <span class="in">`compositeEnsembles()`</span> will draw from it instead.</span>
-<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a>Tree rings and historical documents are precisely dated, so their ages are used as they are. The <span class="in">`exactAgeArchives`</span> argument of <span class="in">`sampleEnsembleThenBinTs()`</span> controls which archive types this applies to.</span>
-<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot it</span></span>
-<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a><span class="in">`plotComposite()`</span> draws the composite's ensemble as quantile ribbons, plus how many records contribute to each bin. The composite knows its time scale (<span class="in">`comp$timeUnits`</span>), so <span class="in">`plotComposite(comp)`</span> gives a forward year CE axis. Here we take the two panels separately (<span class="in">`combine = FALSE`</span>), so that we can give them matching axes and labels:</span>
-<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot, fig.height = 6}</span></span>
-<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">plotComposite</span>(comp, <span class="at">combine =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a>ce_axis <span class="ot">&lt;-</span> <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>))</span>
-<span id="cb14-128"><a href="#cb14-128" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-129"><a href="#cb14-129" aria-hidden="true" tabindex="-1"></a>egg<span class="sc">::</span><span class="fu">ggarrange</span>(</span>
-<span id="cb14-130"><a href="#cb14-130" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>compositeEns <span class="sc">+</span> ce_axis <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>) <span class="sc">+</span></span>
-<span id="cb14-131"><a href="#cb14-131" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>),</span>
-<span id="cb14-132"><a href="#cb14-132" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>dataUsed <span class="sc">+</span> ce_axis,</span>
-<span id="cb14-133"><a href="#cb14-133" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>),</span>
-<span id="cb14-134"><a href="#cb14-134" aria-hidden="true" tabindex="-1"></a>  <span class="at">top =</span> <span class="fu">paste</span>(region, <span class="st">"moisture composite"</span>)</span>
-<span id="cb14-135"><a href="#cb14-135" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb14-136"><a href="#cb14-136" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-137"><a href="#cb14-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-138"><a href="#cb14-138" aria-hidden="true" tabindex="-1"></a><span class="in">`summary()`</span> gives the composite's quantiles in each bin:</span>
-<span id="cb14-139"><a href="#cb14-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-140"><a href="#cb14-140" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary}</span></span>
-<span id="cb14-141"><a href="#cb14-141" aria-hidden="true" tabindex="-1"></a>comp_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(comp)</span>
-<span id="cb14-142"><a href="#cb14-142" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(comp_summary)</span>
-<span id="cb14-143"><a href="#cb14-143" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-144"><a href="#cb14-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-145"><a href="#cb14-145" aria-hidden="true" tabindex="-1"></a>Notice the droughts in the 1100s and in the late 1200s, and the wetter conditions before about 1100 CE. Western North America's medieval megadroughts are well known from tree rings, and here lake records support them too. The uncertainty widens before 800 CE, where fewer records contribute.</span>
-<span id="cb14-146"><a href="#cb14-146" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-147"><a href="#cb14-147" aria-hidden="true" tabindex="-1"></a><span class="fu">## Does every archive agree?</span></span>
-<span id="cb14-148"><a href="#cb14-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-149"><a href="#cb14-149" aria-hidden="true" tabindex="-1"></a>A useful check is to composite each archive on its own. If trees and lakes tell different stories, that is worth understanding before you trust the combined result.</span>
-<span id="cb14-150"><a href="#cb14-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-151"><a href="#cb14-151" aria-hidden="true" tabindex="-1"></a><span class="in">```{r by-archive, fig.height = 5}</span></span>
-<span id="cb14-152"><a href="#cb14-152" aria-hidden="true" tabindex="-1"></a>by_archive <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="st">"Wood"</span>, <span class="st">"LakeSediment"</span>), <span class="cf">function</span>(a) {</span>
-<span id="cb14-153"><a href="#cb14-153" aria-hidden="true" tabindex="-1"></a>  sub <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, archiveType <span class="sc">==</span> a)</span>
-<span id="cb14-154"><a href="#cb14-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
-<span id="cb14-155"><a href="#cb14-155" aria-hidden="true" tabindex="-1"></a>  ca <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(sub,</span>
-<span id="cb14-156"><a href="#cb14-156" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
-<span id="cb14-157"><a href="#cb14-157" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
-<span id="cb14-158"><a href="#cb14-158" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
-<span id="cb14-159"><a href="#cb14-159" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
-<span id="cb14-160"><a href="#cb14-160" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
-<span id="cb14-161"><a href="#cb14-161" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
-<span id="cb14-162"><a href="#cb14-162" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
-<span id="cb14-163"><a href="#cb14-163" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-164"><a href="#cb14-164" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(ca)</span>
-<span id="cb14-165"><a href="#cb14-165" aria-hidden="true" tabindex="-1"></a>  s<span class="sc">$</span>archive <span class="ot">&lt;-</span> <span class="fu">paste0</span>(a, <span class="st">" (n = "</span>, <span class="fu">nrow</span>(sub), <span class="st">")"</span>)</span>
-<span id="cb14-166"><a href="#cb14-166" aria-hidden="true" tabindex="-1"></a>  s</span>
-<span id="cb14-167"><a href="#cb14-167" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
-<span id="cb14-168"><a href="#cb14-168" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>()</span>
-<span id="cb14-169"><a href="#cb14-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-170"><a href="#cb14-170" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(by_archive)[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"lo"</span>, <span class="st">"med"</span>, <span class="st">"hi"</span>)</span>
-<span id="cb14-171"><a href="#cb14-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-172"><a href="#cb14-172" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(by_archive, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> archive, <span class="at">color =</span> archive)) <span class="sc">+</span></span>
-<span id="cb14-173"><a href="#cb14-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo, <span class="at">ymax =</span> hi), <span class="at">alpha =</span> <span class="fl">0.25</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
-<span id="cb14-174"><a href="#cb14-174" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> med)) <span class="sc">+</span></span>
-<span id="cb14-175"><a href="#cb14-175" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
-<span id="cb14-176"><a href="#cb14-176" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
-<span id="cb14-177"><a href="#cb14-177" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb14-178"><a href="#cb14-178" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb14-179"><a href="#cb14-179" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
-<span id="cb14-180"><a href="#cb14-180" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-181"><a href="#cb14-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-182"><a href="#cb14-182" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
-<span id="cb14-183"><a href="#cb14-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-184"><a href="#cb14-184" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Change <span class="in">`region`</span> at the top to another AR6 region (<span class="in">`NWN`</span>, <span class="in">`ENA`</span>, <span class="in">`MED`</span>, <span class="in">`EAS`</span>, ...) and rerun everything. Check the record table first.</span>
-<span id="cb14-185"><a href="#cb14-185" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`stanFun = standardizeOverRandomInterval`</span> with <span class="in">`duration = 300, searchRange = c(1000, 1950)`</span>, which picks a different standardization window for each ensemble member, so that the choice of window becomes part of the uncertainty.</span>
-<span id="cb14-186"><a href="#cb14-186" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Try <span class="in">`samplePct = 0.75`</span>, which leaves out a random quarter of the records in each ensemble member (a jackknife).</span>
-<span id="cb14-187"><a href="#cb14-187" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Weight records with <span class="in">`weights = "archiveType"`</span>, so that each archive type counts equally however many records it has.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "2. Regional composites with compositeR"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "A moisture composite for western North America"</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>A composite averages many records into one regional series. Done carefully, it keeps the shared signal, reduces the noise of individual records, and carries the uncertainties of the inputs through to the result. compositeR does this with ensembles: it repeats the whole bin, standardize and average procedure many times, each time drawing different age models and proxy values, so the spread of the results shows the uncertainty.</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>Here we build a composite of moisture-sensitive records from the IPCC AR6 region **WNA** (western North America), for the Common Era. The region is set in one place, so you can rerun everything for another region.</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="fu">## Setup</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lipdR)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(compositeR)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"R/helpers.R"</span>))</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="fu">checkVersions</span>()</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a><span class="in">`h2kTimeseries()`</span> does the steps from <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](01-load-plot-map.qmd)</span> in one call: read the compilation, keep the 0.9.0 members, add AR6 regions, and put every record's <span class="in">`time`</span> in years CE.</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a><span class="in">```{r load}</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">h2kTimeseries</span>()</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(h2k)</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="fu">## Choose the records</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>A composite only makes sense if the records measure the same thing, and if they all point the same way. Hydroclimate2k records are interpreted as many different variables (precipitation, streamflow, P/E, PDSI, lake level, ...), and a large value means "wetter" for some and "drier" for others. For example, lake-water d18O usually rises when evaporation exceeds precipitation.</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>The interpretations handle this (see <span class="co">[</span><span class="ot">tutorial 1</span><span class="co">](01-load-plot-map.qmd#interpretations)</span>): <span class="in">`variable`</span> says what a record measures, and <span class="in">`direction`</span> says whether larger values mean more or less of it.</span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>First, choose the records that measure moisture. The interpretation vocabulary isn't standardized yet, so <span class="in">`isMoisture()`</span> (in <span class="in">`R/helpers.R`</span>) recognizes the variants. It is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:</span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a><span class="in">```{r is-moisture}</span></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a><span class="fu">isMoisture</span>(<span class="fu">c</span>(<span class="st">"streamflow"</span>, <span class="st">"P/E"</span>, <span class="st">"Precipitation amount"</span>, <span class="st">"temperature"</span>, <span class="st">"precipitationIsotope"</span>, <span class="cn">NA</span>))</span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a><span class="in">`lipdR::filterByInterpretation()`</span> applies it to each record's interpretations. We want the records whose main climate interpretation is moisture, so we look only at climate-scoped interpretations (<span class="in">`scope = "climate"`</span>), and only at the top one of those (<span class="in">`match = "primary"`</span>). With the default, <span class="in">`match = "any"`</span>, a record whose second climate interpretation mentions moisture would be included too.</span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>Then the direction. <span class="in">`compositeR::interpDirectionSign()`</span> reads a record's interpretation direction and returns +1 if larger values mean more of the variable, -1 if they mean less, and <span class="in">`NA`</span> if the direction is missing or ambiguous. It accepts "positive"/"negative" and "increase"/"decrease" in any capitalization.</span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>Ideally, all the directions would be "positive" or "negative", a curation to-do.</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>Select the region's moisture records, one per dataset, and keep the Common Era:</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a><span class="in">```{r select}</span></span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>recs <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span> <span class="co">#Start with the full tibble</span></span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span> <span class="co">#filter to this region</span></span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">isMoisture</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>, <span class="at">match =</span> <span class="st">"primary"</span>) <span class="sc">|&gt;</span> <span class="co">#keep records interpreted as moisture</span></span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">direction =</span> purrr<span class="sc">::</span><span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(<span class="fu">n</span>()), \(i) compositeR<span class="sc">::</span><span class="fu">interpDirectionSign</span>(<span class="fu">pick</span>(<span class="fu">everything</span>())[i, ]))) <span class="sc">|&gt;</span> <span class="co">#+1 or -1</span></span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(direction)) <span class="sc">|&gt;</span> <span class="co">#drop records without a usable direction</span></span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> <span class="co">#drop duplicates</span></span>
+<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2000</span>) <span class="sc">|&gt;</span></span>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="co">#only look at those with more than 20 datapoints in the interval</span></span>
+<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>recs <span class="sc">|&gt;</span></span>
+<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, archiveType, paleoData_variableName,</span>
+<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>         interpretation1_variable, interpretation1_direction, direction)</span>
+<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a>The table shows the <span class="in">`interpretation1_`</span> columns, but the scope matters. <span class="in">`interpDirectionSign()`</span> also uses the climate-scoped interpretation by default. Abbott.Hiner.2016 shows why: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1. <span class="in">`getInterpretations()`</span> shows all of a record's interpretations:</span>
+<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a><span class="in">```{r abbott}</span></span>
+<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a><span class="fu">getInterpretations</span>(<span class="fu">filter</span>(recs, dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(dataSetName, number, scope, variable, direction)</span>
+<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>::: callout-important</span>
+<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a><span class="fu">## Look at what you're compositing</span></span>
+<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a><span class="in">`isMoisture()`</span> is a convenience for handling our currently imperfect metadata. It's not ideal. Read the table above, and check the interpretations of any record you aren't sure about. Watch out for drought indices: "drought, positive" means larger values are drier, so <span class="in">`isMoisture()`</span> leaves them out rather than let them point the wrong way. </span>
+<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map, fig.height = 5}</span></span>
+<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a>lipdViz<span class="sc">::</span><span class="fu">mapTs</span>(recs, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">4</span>,</span>
+<span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a>               <span class="at">lat.range =</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">55</span>), <span class="at">lon.range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">130</span>, <span class="sc">-</span><span class="dv">100</span>))</span>
+<span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-83"><a href="#cb15-83" aria-hidden="true" tabindex="-1"></a><span class="fu">## Records in different units</span></span>
+<span id="cb15-84"><a href="#cb15-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-85"><a href="#cb15-85" aria-hidden="true" tabindex="-1"></a>The records are in different units (mm of streamflow, permil, tree-ring indices), some were dated in yr BP and some in years CE, and half of them point the "wrong" way. We don't need to fix any of this before compositing:</span>
+<span id="cb15-86"><a href="#cb15-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-87"><a href="#cb15-87" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Units:** the standardization step (below) puts every record in standard-deviation units, and we give the uncertainty in standard deviations too (<span class="in">`uncUnits = "sd"`</span>).</span>
+<span id="cb15-88"><a href="#cb15-88" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Time:** <span class="in">`compositeEnsembles()`</span> reads each record's <span class="in">`time`</span> and its scale, and puts it on the scale given by <span class="in">`time.units`</span>. Here that's <span class="in">`"CE"`</span>, so <span class="in">`binvec`</span> is in years CE. (Without <span class="in">`time.units`</span>, it uses the scale the records share, or yr BP if they differ.)</span>
+<span id="cb15-89"><a href="#cb15-89" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Direction:** <span class="in">`compositeEnsembles()`</span> flips records with a negative direction when <span class="in">`alignInterpDirection = TRUE`</span> (the default), using <span class="in">`interpDirectionSign()`</span>.</span>
+<span id="cb15-90"><a href="#cb15-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-91"><a href="#cb15-91" aria-hidden="true" tabindex="-1"></a>It also takes the tibble directly. You can pass a lipdR timeseries list from <span class="in">`extractTs()`</span> instead.</span>
+<span id="cb15-92"><a href="#cb15-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-93"><a href="#cb15-93" aria-hidden="true" tabindex="-1"></a><span class="fu">## Build the composite</span></span>
+<span id="cb15-94"><a href="#cb15-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-95"><a href="#cb15-95" aria-hidden="true" tabindex="-1"></a><span class="in">`compositeEnsembles()`</span> repeats these steps <span class="in">`nens`</span> times:</span>
+<span id="cb15-96"><a href="#cb15-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-97"><a href="#cb15-97" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Bin** each record onto a common time axis (<span class="in">`binvec`</span>). The default <span class="in">`binFun`</span>, <span class="in">`sampleEnsembleThenBinTs()`</span>, first perturbs each record: it adds autocorrelated noise to the values (<span class="in">`uncVar = 0.5`</span> with <span class="in">`uncUnits = "sd"`</span>: half of each record's standard deviation, whatever its units), and it simulates age uncertainty with the Banded Age Model (BAM), except for tree rings and documents, whose ages are exact. Records with a negative interpretation direction are flipped at this step.</span>
+<span id="cb15-98"><a href="#cb15-98" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Standardize** the binned records with <span class="in">`stanFun`</span>. Here <span class="in">`standardizeOverInterval()`</span> gives every record mean 0 and standard deviation 1 over 1600 to 1950 CE, a period all the records cover.</span>
+<span id="cb15-99"><a href="#cb15-99" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Average** the standardized records in each bin.</span>
+<span id="cb15-100"><a href="#cb15-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a><span class="in">```{r composite, results = "hide"}</span></span>
+<span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2000</span>, <span class="at">by =</span> <span class="dv">20</span>)</span>
+<span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-104"><a href="#cb15-104" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb15-105"><a href="#cb15-105" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(recs,</span>
+<span id="cb15-106"><a href="#cb15-106" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
+<span id="cb15-107"><a href="#cb15-107" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
+<span id="cb15-108"><a href="#cb15-108" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb15-109"><a href="#cb15-109" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
+<span id="cb15-110"><a href="#cb15-110" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
+<span id="cb15-111"><a href="#cb15-111" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
+<span id="cb15-112"><a href="#cb15-112" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
+<span id="cb15-113"><a href="#cb15-113" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-114"><a href="#cb15-114" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-115"><a href="#cb15-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-116"><a href="#cb15-116" aria-hidden="true" tabindex="-1"></a><span class="in">`nens = 50`</span> keeps this quick. Use several hundred for real work.</span>
+<span id="cb15-117"><a href="#cb15-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-118"><a href="#cb15-118" aria-hidden="true" tabindex="-1"></a>The standard deviation behind <span class="in">`uncUnits = "sd"`</span> is the SD of each whole record, over the years we kept. A record with a large trend has a large SD, so it gets more noise. If you know a record's measurement or calibration uncertainty, put it in a column and name that column in <span class="in">`uncVar`</span> instead (in the record's own units).</span>
+<span id="cb15-119"><a href="#cb15-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-120"><a href="#cb15-120" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
+<span id="cb15-121"><a href="#cb15-121" aria-hidden="true" tabindex="-1"></a><span class="fu">## About the age uncertainty</span></span>
+<span id="cb15-122"><a href="#cb15-122" aria-hidden="true" tabindex="-1"></a>BAM was designed for layer-counted records, such as corals and varves. For radiometrically dated lake and speleothem records it gives only a rough idea of age uncertainty. If a record has an age ensemble (see <span class="co">[</span><span class="ot">tutorial 3</span><span class="co">](03-geoChronR.qmd)</span>), put it in an <span class="in">`ageEnsemble`</span> column (yr BP, as a matrix), and <span class="in">`compositeEnsembles()`</span> will draw from it instead.</span>
+<span id="cb15-123"><a href="#cb15-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-124"><a href="#cb15-124" aria-hidden="true" tabindex="-1"></a>Tree rings and historical documents are precisely dated, so their ages are used as they are. The <span class="in">`exactAgeArchives`</span> argument of <span class="in">`sampleEnsembleThenBinTs()`</span> controls which archive types this applies to.</span>
+<span id="cb15-125"><a href="#cb15-125" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb15-126"><a href="#cb15-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-127"><a href="#cb15-127" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot it</span></span>
+<span id="cb15-128"><a href="#cb15-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-129"><a href="#cb15-129" aria-hidden="true" tabindex="-1"></a><span class="in">`plotComposite()`</span> draws the composite's ensemble as quantile ribbons, plus how many records contribute to each bin. The composite knows its time scale (<span class="in">`comp$timeUnits`</span>), so <span class="in">`plotComposite(comp)`</span> gives a forward year CE axis. Here we take the two panels separately (<span class="in">`combine = FALSE`</span>), so that we can give them matching axes and labels:</span>
+<span id="cb15-130"><a href="#cb15-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-131"><a href="#cb15-131" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot, fig.height = 6}</span></span>
+<span id="cb15-132"><a href="#cb15-132" aria-hidden="true" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">plotComposite</span>(comp, <span class="at">combine =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-133"><a href="#cb15-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-134"><a href="#cb15-134" aria-hidden="true" tabindex="-1"></a>ce_axis <span class="ot">&lt;-</span> <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb15-135"><a href="#cb15-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-136"><a href="#cb15-136" aria-hidden="true" tabindex="-1"></a>egg<span class="sc">::</span><span class="fu">ggarrange</span>(</span>
+<span id="cb15-137"><a href="#cb15-137" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>compositeEns <span class="sc">+</span> ce_axis <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>) <span class="sc">+</span></span>
+<span id="cb15-138"><a href="#cb15-138" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>),</span>
+<span id="cb15-139"><a href="#cb15-139" aria-hidden="true" tabindex="-1"></a>  panels<span class="sc">$</span>dataUsed <span class="sc">+</span> ce_axis,</span>
+<span id="cb15-140"><a href="#cb15-140" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>),</span>
+<span id="cb15-141"><a href="#cb15-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">top =</span> <span class="fu">paste</span>(region, <span class="st">"moisture composite"</span>)</span>
+<span id="cb15-142"><a href="#cb15-142" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-143"><a href="#cb15-143" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-144"><a href="#cb15-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-145"><a href="#cb15-145" aria-hidden="true" tabindex="-1"></a><span class="in">`summary()`</span> gives the composite's quantiles in each bin:</span>
+<span id="cb15-146"><a href="#cb15-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-147"><a href="#cb15-147" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary}</span></span>
+<span id="cb15-148"><a href="#cb15-148" aria-hidden="true" tabindex="-1"></a>comp_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(comp)</span>
+<span id="cb15-149"><a href="#cb15-149" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(comp_summary)</span>
+<span id="cb15-150"><a href="#cb15-150" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-151"><a href="#cb15-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-152"><a href="#cb15-152" aria-hidden="true" tabindex="-1"></a>Notice the droughts in the 1100s and in the late 1200s, and the wetter conditions before about 1100 CE. Western North America's medieval megadroughts are well known from tree rings, and here lake records support them too. The uncertainty widens before 800 CE, where fewer records contribute.</span>
+<span id="cb15-153"><a href="#cb15-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-154"><a href="#cb15-154" aria-hidden="true" tabindex="-1"></a><span class="fu">## Does every archive agree?</span></span>
+<span id="cb15-155"><a href="#cb15-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-156"><a href="#cb15-156" aria-hidden="true" tabindex="-1"></a>A useful check is to composite each archive on its own. If trees and lakes tell different stories, that is worth understanding before you trust the combined result.</span>
+<span id="cb15-157"><a href="#cb15-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-158"><a href="#cb15-158" aria-hidden="true" tabindex="-1"></a><span class="in">```{r by-archive, fig.height = 5}</span></span>
+<span id="cb15-159"><a href="#cb15-159" aria-hidden="true" tabindex="-1"></a>by_archive <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="fu">c</span>(<span class="st">"Wood"</span>, <span class="st">"LakeSediment"</span>), <span class="cf">function</span>(a) {</span>
+<span id="cb15-160"><a href="#cb15-160" aria-hidden="true" tabindex="-1"></a>  sub <span class="ot">&lt;-</span> <span class="fu">filter</span>(recs, archiveType <span class="sc">==</span> a)</span>
+<span id="cb15-161"><a href="#cb15-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb15-162"><a href="#cb15-162" aria-hidden="true" tabindex="-1"></a>  ca <span class="ot">&lt;-</span> <span class="fu">compositeEnsembles</span>(sub,</span>
+<span id="cb15-163"><a href="#cb15-163" aria-hidden="true" tabindex="-1"></a>                           <span class="at">binvec =</span> binvec,</span>
+<span id="cb15-164"><a href="#cb15-164" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nens =</span> <span class="dv">50</span>,</span>
+<span id="cb15-165"><a href="#cb15-165" aria-hidden="true" tabindex="-1"></a>                           <span class="at">time.units =</span> <span class="st">"CE"</span>,</span>
+<span id="cb15-166"><a href="#cb15-166" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncVar =</span> <span class="fl">0.5</span>,</span>
+<span id="cb15-167"><a href="#cb15-167" aria-hidden="true" tabindex="-1"></a>                           <span class="at">uncUnits =</span> <span class="st">"sd"</span>,</span>
+<span id="cb15-168"><a href="#cb15-168" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stanFun =</span> standardizeOverInterval,</span>
+<span id="cb15-169"><a href="#cb15-169" aria-hidden="true" tabindex="-1"></a>                           <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1600</span>, <span class="dv">1950</span>),</span>
+<span id="cb15-170"><a href="#cb15-170" aria-hidden="true" tabindex="-1"></a>                           <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-171"><a href="#cb15-171" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(ca)</span>
+<span id="cb15-172"><a href="#cb15-172" aria-hidden="true" tabindex="-1"></a>  s<span class="sc">$</span>archive <span class="ot">&lt;-</span> <span class="fu">paste0</span>(a, <span class="st">" (n = "</span>, <span class="fu">nrow</span>(sub), <span class="st">")"</span>)</span>
+<span id="cb15-173"><a href="#cb15-173" aria-hidden="true" tabindex="-1"></a>  s</span>
+<span id="cb15-174"><a href="#cb15-174" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb15-175"><a href="#cb15-175" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>()</span>
+<span id="cb15-176"><a href="#cb15-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-177"><a href="#cb15-177" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(by_archive)[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"lo"</span>, <span class="st">"med"</span>, <span class="st">"hi"</span>)</span>
+<span id="cb15-178"><a href="#cb15-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-179"><a href="#cb15-179" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(by_archive, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> archive, <span class="at">color =</span> archive)) <span class="sc">+</span></span>
+<span id="cb15-180"><a href="#cb15-180" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo, <span class="at">ymax =</span> hi), <span class="at">alpha =</span> <span class="fl">0.25</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb15-181"><a href="#cb15-181" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> med)) <span class="sc">+</span></span>
+<span id="cb15-182"><a href="#cb15-182" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb15-183"><a href="#cb15-183" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="st">"Year (CE)"</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2000</span>), <span class="at">expand =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb15-184"><a href="#cb15-184" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Moisture anomaly (SD)"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb15-185"><a href="#cb15-185" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb15-186"><a href="#cb15-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="cb15-187"><a href="#cb15-187" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb15-188"><a href="#cb15-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-189"><a href="#cb15-189" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
+<span id="cb15-190"><a href="#cb15-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-191"><a href="#cb15-191" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Change <span class="in">`region`</span> at the top to another AR6 region (<span class="in">`NWN`</span>, <span class="in">`ENA`</span>, <span class="in">`MED`</span>, <span class="in">`EAS`</span>, ...) and rerun everything. Check the record table first.</span>
+<span id="cb15-192"><a href="#cb15-192" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`stanFun = standardizeOverRandomInterval`</span> with <span class="in">`duration = 300, searchRange = c(1000, 1950)`</span>, which picks a different standardization window for each ensemble member, so that the choice of window becomes part of the uncertainty.</span>
+<span id="cb15-193"><a href="#cb15-193" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Try <span class="in">`samplePct = 0.75`</span>, which leaves out a random quarter of the records in each ensemble member (a jackknife).</span>
+<span id="cb15-194"><a href="#cb15-194" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Weight records with <span class="in">`weights = "archiveType"`</span>, so that each archive type counts equally however many records it has.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 <footer class="footer">
