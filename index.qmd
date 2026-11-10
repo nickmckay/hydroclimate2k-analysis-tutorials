@@ -37,9 +37,11 @@ The LiPD family was reorganized and synchronized in November 2026. geoChronR is 
 
 ::: callout-warning
 ## Old scripts may break
-You need **lipdR 0.8.3 or newer** and **geoChronR 2.0.0 or newer**. lipdR 0.7 renamed the compilation fields (`inCompilationBeta` became `inCompilation`), added `filterByCompilation()`, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check `packageVersion("geoChronR")`.
+You need **lipdR 0.8.4 or newer** and **geoChronR 2.0.0 or newer**. lipdR 0.7 renamed the compilation fields (`inCompilationBeta` became `inCompilation`), added `filterByCompilation()`, and removed 27 functions. The old geoChronR (1.1.x) installs under the same name, so check `packageVersion("geoChronR")`.
 
 lipdR 0.8 records the time scale (yr BP, ka, year CE, ...) of every time column, and gives every timeseries a standard `time` column. lipdViz, compositeR and actR use it by default, and take `time.units` to choose the scale, so records dated in yr BP and in year CE can be plotted and analyzed together. [Tutorial 1](tutorials/01-load-plot-map.qmd#time-axes) explains how it works.
+
+lipdR 0.8.4 adds `filterByInterpretation()`, which selects records by their interpretations (for example, the records whose primary climate interpretation is precipitation), whichever number the interpretation has in each record. See [tutorial 1](tutorials/01-load-plot-map.qmd#interpretations).
 :::
 
 ## Getting help

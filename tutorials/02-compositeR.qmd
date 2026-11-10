@@ -32,13 +32,15 @@ nrow(h2k)
 
 A composite only makes sense if the records measure the same thing, and if they all point the same way. Hydroclimate2k records are interpreted as many different variables (precipitation, streamflow, P/E, PDSI, lake level, ...), and a large value means "wetter" for some and "drier" for others. For example, lake-water d18O usually rises when evaporation exceeds precipitation.
 
-Two pieces of metadata handle this. `interpretation1_variable` says what a record measures, and `interpretation1_direction` says whether larger values mean more or less of it.
+The interpretations handle this (see [tutorial 1](01-load-plot-map.qmd#interpretations)): `variable` says what a record measures, and `direction` says whether larger values mean more or less of it.
 
-First, choose the records that measure moisture. `isMoisture()` (in `R/helpers.R`) is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:
+First, choose the records that measure moisture. The interpretation vocabulary isn't standardized yet, so `isMoisture()` (in `R/helpers.R`) recognizes the variants. It is TRUE for variables like precipitation, streamflow, P/E, PDSI and lake level, and FALSE for temperature, the isotopic composition of precipitation, and missing interpretations:
 
 ```{r is-moisture}
-isMoisture(c("streamflow", "P/E", "precipitation", "temperature", "precipitationIsotope", NA))
+isMoisture(c("streamflow", "P/E", "Precipitation amount", "temperature", "precipitationIsotope", NA))
 ```
+
+`lipdR::filterByInterpretation()` applies it to each record's interpretations. We want the records whose main climate interpretation is moisture, so we look only at climate-scoped interpretations (`scope = "climate"`), and only at the top one of those (`match = "primary"`). With the default, `match = "any"`, a record whose second climate interpretation mentions moisture would be included too.
 
 Then the direction. `compositeR::interpDirectionSign()` reads a record's interpretation direction and returns +1 if larger values mean more of the variable, -1 if they mean less, and `NA` if the direction is missing or ambiguous. It accepts "positive"/"negative" and "increase"/"decrease" in any capitalization.
 
@@ -49,7 +51,7 @@ Select the region's moisture records, one per dataset, and keep the Common Era:
 ```{r select}
 recs <- h2k |> #Start with the full tibble
   filter(ar6_region == region) |> #filter to this region
-  filter(isMoisture(interpretation1_variable)) |> #keep records interpreted as moisture
+  filterByInterpretation(isMoisture(variable), scope = "climate", match = "primary") |> #keep records interpreted as moisture
   mutate(direction = purrr::map_dbl(seq_len(n()), \(i) compositeR::interpDirectionSign(pick(everything())[i, ]))) |> #+1 or -1
   filter(!is.na(direction)) |> #drop records without a usable direction
   distinct(dataSetName, .keep_all = TRUE) |> #drop duplicates
@@ -61,7 +63,12 @@ recs |>
          interpretation1_variable, interpretation1_direction, direction)
 ```
 
-Records can carry several interpretations, each with a `scope` (climate, environment, isotope). `interpDirectionSign()` uses the climate-scoped one by default. Abbott.Hiner.2016 shows why that matters: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1.
+The table shows the `interpretation1_` columns, but the scope matters. `interpDirectionSign()` also uses the climate-scoped interpretation by default. Abbott.Hiner.2016 shows why: its first interpretation is environmental (winter wetness and/or runoff intensity, with no direction), and its second is climatic (winter precipitation, positive), so it gets +1. `getInterpretations()` shows all of a record's interpretations:
+
+```{r abbott}
+getInterpretations(filter(recs, dataSetName == "Abbott.Hiner.2016")) |>
+  select(dataSetName, number, scope, variable, direction)
+```
 
 ::: callout-important
 ## Look at what you're compositing

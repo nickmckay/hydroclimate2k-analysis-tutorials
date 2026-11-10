@@ -32,7 +32,7 @@ checkVersions()
 
 message("Downloading and reading the Hydroclimate2k compilation ",
         "(about 280 MB; the first read takes a few minutes)...")
-D <- getHydro2k()
+D <- getHydroclimate2k()
 regions <- getAr6Regions()
 
 message("\nAll set: ", length(D), " datasets cached in ", h2k_data_dir, ".")

@@ -65,7 +65,7 @@ h2k_dir <- function(version = h2k_version) {
 #' `lipdR::readLipd()`, which takes a couple of minutes. The result is saved
 #' as an .rds file, so later calls take a few seconds. Updating lipdR to a new
 #' minor version (e.g. 0.8 to 0.9) reads the files again.
-getHydro2k <- function(version = h2k_version) {
+getHydroclimate2k <- function(version = h2k_version) {
   # readLipd() adds information as it reads (e.g. time scales since lipdR
   # 0.8), so the cache is kept per lipdR version (major.minor)
   lv <- paste(unlist(utils::packageVersion("lipdR"))[1:2], collapse = ".")
@@ -115,7 +115,7 @@ addAr6Region <- function(tib, regions = getAr6Regions()) {
 
 #' Stop early if an old version of the LiPD packages is installed.
 checkVersions <- function() {
-  need <- c(lipdR = "0.8.3", ens = "0.2.2", lipdViz = "0.3.0",
+  need <- c(lipdR = "0.8.4", ens = "0.2.2", lipdViz = "0.3.0",
             agemodelR = "0.2.0", geoChronR = "2.0.0", compositeR = "0.6.0",
             actR = "0.5.0")
   for (p in names(need)) {
@@ -151,7 +151,7 @@ hasValues <- function(x) {
 #' puts every record's `time` on one scale with `lipdR::convertTsTime()`
 #' (year CE by default). Returns a plain tibble, one row per timeseries.
 h2kTimeseries <- function(version = h2k_version, units = "CE") {
-  D <- getHydro2k(version)
+  D <- getHydroclimate2k(version)
   tib <- lipdR::filterByCompilation(lipdR::ts2tibble(lipdR::extractTs(D)),
                                     "hydroclimate2k", version = version,
                                     version.op = "==")
@@ -168,6 +168,8 @@ h2kTimeseries <- function(version = h2k_version, units = "CE") {
 #' interpretation direction) mean wetter. FALSE for temperature, isotopes of
 #' precipitation, moisture source, and drought indices (where larger means
 #' drier, so they would point the wrong way), and for missing interpretations.
+#' Use it inside lipdR::filterByInterpretation(), e.g.
+#' filterByInterpretation(tib, isMoisture(variable), scope = "climate", match = "primary")
 isMoisture <- function(variable) {
   v <- tolower(variable)
   !is.na(v) &
