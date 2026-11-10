@@ -599,7 +599,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="interpretations" class="level2">
 <h2 class="anchored" data-anchor-id="interpretations">Interpretations</h2>
-<p>An interpretation says what a record is a measure of. Each record can have several, numbered (<code>interpretation1_variable</code>, <code>interpretation2_variable</code>, …), and each has a <code>scope</code>: <strong>climate</strong> (the climate variable the record reflects), <strong>isotope</strong> (what controls an isotope value, such as the d18O of precipitation) or <strong>environment</strong> (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the <code>interpretation1_</code> columns don’t tell the whole story.</p>
+<p>An interpretation says what a record is a measure of. Each record can have several, numbered (<code>interpretation1_variable</code>, <code>interpretation2_variable</code>, …), and each has a <code>scope</code>: <strong>climate</strong> (the climate variable(s) the record reflects, which should usually be a variable that is commonly simulated and exported by a climate model), <strong>isotope</strong> (a standardized description of what controls an isotope value, mostly used by the iso2k project) or <strong>environment</strong> (a more local, often non-climate control, that directly controls proxy variability. Lake productivity, tree growth, lake water isotopes, for example). In <strong>Hydroclimate2k we are only using climate and environment scopes.</strong></p>
+<p>R appends numbers to interpretations when extracting timeseries, but the order reflects the order in which they came into the LiPD file, which can be informative, but isn’t directly connected to interpretation. The climate interpretation is number 1 in some records and number 3 in others, so the <code>interpretation1_</code> columns don’t tell the whole story.</p>
 <p><code>getInterpretations()</code> lists them with one row per interpretation. <code>variable</code> is what the record is interpreted as, and <code>direction</code> says whether larger values mean more or less of it:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>interp <span class="ot">&lt;-</span> <span class="fu">getInterpretations</span>(h2k)</span>
@@ -1560,183 +1561,185 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb47-108"><a href="#cb47-108" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb47-109"><a href="#cb47-109" aria-hidden="true" tabindex="-1"></a><span class="fu">## Interpretations</span></span>
 <span id="cb47-110"><a href="#cb47-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-111"><a href="#cb47-111" aria-hidden="true" tabindex="-1"></a>An interpretation says what a record is a measure of. Each record can have several, numbered (<span class="in">`interpretation1_variable`</span>, <span class="in">`interpretation2_variable`</span>, ...), and each has a <span class="in">`scope`</span>: **climate** (the climate variable the record reflects), **isotope** (what controls an isotope value, such as the d18O of precipitation) or **environment** (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the <span class="in">`interpretation1_`</span> columns don't tell the whole story.</span>
+<span id="cb47-111"><a href="#cb47-111" aria-hidden="true" tabindex="-1"></a>An interpretation says what a record is a measure of. Each record can have several, numbered (<span class="in">`interpretation1_variable`</span>, <span class="in">`interpretation2_variable`</span>, ...), and each has a <span class="in">`scope`</span>: **climate** (the climate variable(s) the record reflects, which should usually be a variable that is commonly simulated and exported by a climate model), **isotope** (a standardized description of what controls an isotope value, mostly used by the iso2k project) or **environment** (a more local, often non-climate control, that directly controls proxy variability. Lake productivity, tree growth, lake water isotopes, for example). In **Hydroclimate2k we are only using climate and environment scopes.** </span>
 <span id="cb47-112"><a href="#cb47-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-113"><a href="#cb47-113" aria-hidden="true" tabindex="-1"></a><span class="in">`getInterpretations()`</span> lists them with one row per interpretation. <span class="in">`variable`</span> is what the record is interpreted as, and <span class="in">`direction`</span> says whether larger values mean more or less of it:</span>
+<span id="cb47-113"><a href="#cb47-113" aria-hidden="true" tabindex="-1"></a>R appends numbers to interpretations when extracting timeseries, but the order reflects the order in which they came into the LiPD file, which can be informative, but isn't directly connected to interpretation. The climate interpretation is number 1 in some records and number 3 in others, so the <span class="in">`interpretation1_`</span> columns don't tell the whole story.</span>
 <span id="cb47-114"><a href="#cb47-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-115"><a href="#cb47-115" aria-hidden="true" tabindex="-1"></a><span class="in">```{r interpretations}</span></span>
-<span id="cb47-116"><a href="#cb47-116" aria-hidden="true" tabindex="-1"></a>interp <span class="ot">&lt;-</span> <span class="fu">getInterpretations</span>(h2k)</span>
-<span id="cb47-117"><a href="#cb47-117" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(interp, scope)</span>
-<span id="cb47-118"><a href="#cb47-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-119"><a href="#cb47-119" aria-hidden="true" tabindex="-1"></a>interp <span class="sc">|&gt;</span></span>
-<span id="cb47-120"><a href="#cb47-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(scope <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-121"><a href="#cb47-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(variable, direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-122"><a href="#cb47-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
-<span id="cb47-123"><a href="#cb47-123" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-124"><a href="#cb47-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-125"><a href="#cb47-125" aria-hidden="true" tabindex="-1"></a>The vocabulary isn't fully standardized yet ("precipitation", "Precipitation amount", "Precipitation index", ...), which is a curation to-do.</span>
+<span id="cb47-115"><a href="#cb47-115" aria-hidden="true" tabindex="-1"></a><span class="in">`getInterpretations()`</span> lists them with one row per interpretation. <span class="in">`variable`</span> is what the record is interpreted as, and <span class="in">`direction`</span> says whether larger values mean more or less of it:</span>
+<span id="cb47-116"><a href="#cb47-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-117"><a href="#cb47-117" aria-hidden="true" tabindex="-1"></a><span class="in">```{r interpretations}</span></span>
+<span id="cb47-118"><a href="#cb47-118" aria-hidden="true" tabindex="-1"></a>interp <span class="ot">&lt;-</span> <span class="fu">getInterpretations</span>(h2k)</span>
+<span id="cb47-119"><a href="#cb47-119" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(interp, scope)</span>
+<span id="cb47-120"><a href="#cb47-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-121"><a href="#cb47-121" aria-hidden="true" tabindex="-1"></a>interp <span class="sc">|&gt;</span></span>
+<span id="cb47-122"><a href="#cb47-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(scope <span class="sc">==</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-123"><a href="#cb47-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(variable, direction, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-124"><a href="#cb47-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
+<span id="cb47-125"><a href="#cb47-125" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-126"><a href="#cb47-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-127"><a href="#cb47-127" aria-hidden="true" tabindex="-1"></a><span class="in">`filterByInterpretation()`</span> selects records by their interpretations. Conditions are checked within one interpretation, so this keeps records with an interpretation that is both precipitation and positive (named arguments match any of their values, ignoring case):</span>
+<span id="cb47-127"><a href="#cb47-127" aria-hidden="true" tabindex="-1"></a>The vocabulary isn't fully standardized yet ("precipitation", "Precipitation amount", "Precipitation index", ...), which is a curation to-do.</span>
 <span id="cb47-128"><a href="#cb47-128" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-129"><a href="#cb47-129" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-named}</span></span>
-<span id="cb47-130"><a href="#cb47-130" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-131"><a href="#cb47-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="at">variable =</span> <span class="st">"precipitation"</span>, <span class="at">direction =</span> <span class="st">"positive"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-132"><a href="#cb47-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb47-133"><a href="#cb47-133" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-134"><a href="#cb47-134" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-135"><a href="#cb47-135" aria-hidden="true" tabindex="-1"></a>Unnamed conditions are R expressions, evaluated on the rows of <span class="in">`getInterpretations()`</span>, so you can use any logic. Here <span class="in">`grepl()`</span> catches all the PDSI variants ("PDSI", "scPDSI"), and <span class="in">`scope = "climate"`</span> looks only at climate interpretations (a missing scope counts as climate):</span>
+<span id="cb47-129"><a href="#cb47-129" aria-hidden="true" tabindex="-1"></a><span class="in">`filterByInterpretation()`</span> selects records by their interpretations. Conditions are checked within one interpretation, so this keeps records with an interpretation that is both precipitation and positive (named arguments match any of their values, ignoring case):</span>
+<span id="cb47-130"><a href="#cb47-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-131"><a href="#cb47-131" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-named}</span></span>
+<span id="cb47-132"><a href="#cb47-132" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-133"><a href="#cb47-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="at">variable =</span> <span class="st">"precipitation"</span>, <span class="at">direction =</span> <span class="st">"positive"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-134"><a href="#cb47-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-135"><a href="#cb47-135" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-136"><a href="#cb47-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-137"><a href="#cb47-137" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-expr}</span></span>
-<span id="cb47-138"><a href="#cb47-138" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-139"><a href="#cb47-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">grepl</span>(<span class="st">"pdsi"</span>, variable, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-140"><a href="#cb47-140" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb47-141"><a href="#cb47-141" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-142"><a href="#cb47-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-143"><a href="#cb47-143" aria-hidden="true" tabindex="-1"></a><span class="in">`match`</span> sets how a record's interpretations combine: <span class="in">`"any"`</span> (the default) keeps a record if any of them matches, <span class="in">`"primary"`</span> only if its top one does (lowest <span class="in">`rank`</span>, or else the lowest number), <span class="in">`"all"`</span> if all of them do, and <span class="in">`"none"`</span> if none does. Tutorials 2 and 4 use <span class="in">`filterByInterpretation()`</span> to choose the records interpreted as moisture.</span>
+<span id="cb47-137"><a href="#cb47-137" aria-hidden="true" tabindex="-1"></a>Unnamed conditions are R expressions, evaluated on the rows of <span class="in">`getInterpretations()`</span>, so you can use any logic. Here <span class="in">`grepl()`</span> catches all the PDSI variants ("PDSI", "scPDSI"), and <span class="in">`scope = "climate"`</span> looks only at climate interpretations (a missing scope counts as climate):</span>
+<span id="cb47-138"><a href="#cb47-138" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-139"><a href="#cb47-139" aria-hidden="true" tabindex="-1"></a><span class="in">```{r filter-interp-expr}</span></span>
+<span id="cb47-140"><a href="#cb47-140" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-141"><a href="#cb47-141" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="fu">grepl</span>(<span class="st">"pdsi"</span>, variable, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-142"><a href="#cb47-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(archiveType, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-143"><a href="#cb47-143" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-144"><a href="#cb47-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-145"><a href="#cb47-145" aria-hidden="true" tabindex="-1"></a><span class="fu">## IPCC AR6 regions</span></span>
+<span id="cb47-145"><a href="#cb47-145" aria-hidden="true" tabindex="-1"></a><span class="in">`match`</span> sets how a record's interpretations combine: <span class="in">`"any"`</span> (the default) keeps a record if any of them matches, <span class="in">`"primary"`</span> only if its top one does (lowest <span class="in">`rank`</span>, or else the lowest number), <span class="in">`"all"`</span> if all of them do, and <span class="in">`"none"`</span> if none does. Tutorials 2 and 4 use <span class="in">`filterByInterpretation()`</span> to choose the records interpreted as moisture.</span>
 <span id="cb47-146"><a href="#cb47-146" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-147"><a href="#cb47-147" aria-hidden="true" tabindex="-1"></a>None of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so <span class="in">`R/helpers.R`</span> provides two helpers: <span class="in">`getAr6Regions()`</span> reads the region polygons, and <span class="in">`addAr6Region()`</span> adds the region of each record with a point-in-polygon test (<span class="in">`sf`</span>).</span>
+<span id="cb47-147"><a href="#cb47-147" aria-hidden="true" tabindex="-1"></a><span class="fu">## IPCC AR6 regions</span></span>
 <span id="cb47-148"><a href="#cb47-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-149"><a href="#cb47-149" aria-hidden="true" tabindex="-1"></a><span class="in">```{r ar6}</span></span>
-<span id="cb47-150"><a href="#cb47-150" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
-<span id="cb47-151"><a href="#cb47-151" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
-<span id="cb47-152"><a href="#cb47-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-153"><a href="#cb47-153" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-154"><a href="#cb47-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-155"><a href="#cb47-155" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
-<span id="cb47-156"><a href="#cb47-156" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-157"><a href="#cb47-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-158"><a href="#cb47-158" aria-hidden="true" tabindex="-1"></a>Which regions have both lake and speleothem records?</span>
+<span id="cb47-149"><a href="#cb47-149" aria-hidden="true" tabindex="-1"></a>None of the LiPD packages knows about the IPCC AR6 reference regions (Iturbide et al., 2020), so <span class="in">`R/helpers.R`</span> provides two helpers: <span class="in">`getAr6Regions()`</span> reads the region polygons, and <span class="in">`addAr6Region()`</span> adds the region of each record with a point-in-polygon test (<span class="in">`sf`</span>).</span>
+<span id="cb47-150"><a href="#cb47-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-151"><a href="#cb47-151" aria-hidden="true" tabindex="-1"></a><span class="in">```{r ar6}</span></span>
+<span id="cb47-152"><a href="#cb47-152" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">getAr6Regions</span>()</span>
+<span id="cb47-153"><a href="#cb47-153" aria-hidden="true" tabindex="-1"></a>h2k <span class="ot">&lt;-</span> <span class="fu">addAr6Region</span>(h2k, regions)</span>
+<span id="cb47-154"><a href="#cb47-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-155"><a href="#cb47-155" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-156"><a href="#cb47-156" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, ar6_name, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-157"><a href="#cb47-157" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">15</span>)</span>
+<span id="cb47-158"><a href="#cb47-158" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-159"><a href="#cb47-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-160"><a href="#cb47-160" aria-hidden="true" tabindex="-1"></a><span class="in">```{r region-archive}</span></span>
-<span id="cb47-161"><a href="#cb47-161" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-162"><a href="#cb47-162" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
-<span id="cb47-163"><a href="#cb47-163" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
-<span id="cb47-164"><a href="#cb47-164" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-165"><a href="#cb47-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span>
-<span id="cb47-166"><a href="#cb47-166" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-167"><a href="#cb47-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-168"><a href="#cb47-168" aria-hidden="true" tabindex="-1"></a><span class="fu">## Maps</span></span>
+<span id="cb47-160"><a href="#cb47-160" aria-hidden="true" tabindex="-1"></a>Which regions have both lake and speleothem records?</span>
+<span id="cb47-161"><a href="#cb47-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-162"><a href="#cb47-162" aria-hidden="true" tabindex="-1"></a><span class="in">```{r region-archive}</span></span>
+<span id="cb47-163"><a href="#cb47-163" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-164"><a href="#cb47-164" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ar6_region)) <span class="sc">|&gt;</span></span>
+<span id="cb47-165"><a href="#cb47-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(ar6_region, archiveType) <span class="sc">|&gt;</span></span>
+<span id="cb47-166"><a href="#cb47-166" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> archiveType, <span class="at">values_from =</span> n, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-167"><a href="#cb47-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric)))))</span>
+<span id="cb47-168"><a href="#cb47-168" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-169"><a href="#cb47-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-170"><a href="#cb47-170" aria-hidden="true" tabindex="-1"></a><span class="in">`mapTs()`</span> maps a set of timeseries, colored by any column. Here we color by archive type.</span>
+<span id="cb47-170"><a href="#cb47-170" aria-hidden="true" tabindex="-1"></a><span class="fu">## Maps</span></span>
 <span id="cb47-171"><a href="#cb47-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-172"><a href="#cb47-172" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-archive, fig.height = 6}</span></span>
-<span id="cb47-173"><a href="#cb47-173" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
-<span id="cb47-174"><a href="#cb47-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-175"><a href="#cb47-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-176"><a href="#cb47-176" aria-hidden="true" tabindex="-1"></a><span class="in">`mapLipd()`</span> maps datasets instead of timeseries:</span>
+<span id="cb47-172"><a href="#cb47-172" aria-hidden="true" tabindex="-1"></a><span class="in">`mapTs()`</span> maps a set of timeseries, colored by any column. Here we color by archive type.</span>
+<span id="cb47-173"><a href="#cb47-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-174"><a href="#cb47-174" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-archive, fig.height = 6}</span></span>
+<span id="cb47-175"><a href="#cb47-175" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
+<span id="cb47-176"><a href="#cb47-176" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-177"><a href="#cb47-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-178"><a href="#cb47-178" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-lipd, fig.height = 6}</span></span>
-<span id="cb47-179"><a href="#cb47-179" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb47-180"><a href="#cb47-180" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-181"><a href="#cb47-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-182"><a href="#cb47-182" aria-hidden="true" tabindex="-1"></a>Both return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region's boundaries fall:</span>
+<span id="cb47-178"><a href="#cb47-178" aria-hidden="true" tabindex="-1"></a><span class="in">`mapLipd()`</span> maps datasets instead of timeseries:</span>
+<span id="cb47-179"><a href="#cb47-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-180"><a href="#cb47-180" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-lipd, fig.height = 6}</span></span>
+<span id="cb47-181"><a href="#cb47-181" aria-hidden="true" tabindex="-1"></a><span class="fu">mapLipd</span>(D, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">label.site =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb47-182"><a href="#cb47-182" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-183"><a href="#cb47-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-184"><a href="#cb47-184" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-regions, fig.height = 6}</span></span>
-<span id="cb47-185"><a href="#cb47-185" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb47-186"><a href="#cb47-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span>
-<span id="cb47-187"><a href="#cb47-187" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-188"><a href="#cb47-188" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-189"><a href="#cb47-189" aria-hidden="true" tabindex="-1"></a><span class="fu">## Time axes</span></span>
+<span id="cb47-184"><a href="#cb47-184" aria-hidden="true" tabindex="-1"></a>Both return ggplot2 objects, so you can add to them. Here are the AR6 region outlines, which tell you where each region's boundaries fall:</span>
+<span id="cb47-185"><a href="#cb47-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-186"><a href="#cb47-186" aria-hidden="true" tabindex="-1"></a><span class="in">```{r map-regions, fig.height = 6}</span></span>
+<span id="cb47-187"><a href="#cb47-187" aria-hidden="true" tabindex="-1"></a><span class="fu">mapTs</span>(h2k, <span class="at">color =</span> <span class="st">"archiveType"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb47-188"><a href="#cb47-188" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> regions, <span class="at">inherit.aes =</span> <span class="cn">FALSE</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.2</span>)</span>
+<span id="cb47-189"><a href="#cb47-189" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-190"><a href="#cb47-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-191"><a href="#cb47-191" aria-hidden="true" tabindex="-1"></a>Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:</span>
+<span id="cb47-191"><a href="#cb47-191" aria-hidden="true" tabindex="-1"></a><span class="fu">## Time axes</span></span>
 <span id="cb47-192"><a href="#cb47-192" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-193"><a href="#cb47-193" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeUnits`</span>: e.g. "yr AD", "yr BP" or "ka"</span>
-<span id="cb47-194"><a href="#cb47-194" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDatum`</span>: the year CE of time zero (0 for CE, 1950 for BP)</span>
-<span id="cb47-195"><a href="#cb47-195" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDirection`</span>: "prograde" if time counts forward (year CE), "retrograde" if it counts back (yr BP)</span>
-<span id="cb47-196"><a href="#cb47-196" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeExponent`</span>: 0 for years, 3 for ka (thousands of years)</span>
-<span id="cb47-197"><a href="#cb47-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-198"><a href="#cb47-198" aria-hidden="true" tabindex="-1"></a><span class="in">`extractTs()`</span> also gives every timeseries a <span class="in">`time`</span> column: a copy of its primary time column, which <span class="in">`timeVariableName`</span> names (usually <span class="in">`age`</span> or <span class="in">`year`</span>). <span class="in">`timeSource`</span> says how its scale is known: from the file's metadata, from its units, or "assumed" when the units don't say.</span>
+<span id="cb47-193"><a href="#cb47-193" aria-hidden="true" tabindex="-1"></a>Hydroclimate2k mixes records dated in years CE (tree rings, corals, documents, varves) with records dated in years before present (most lake and speleothem records; BP means before 1950). lipdR records the time scale of every time column when it reads a file, with four fields:</span>
+<span id="cb47-194"><a href="#cb47-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-195"><a href="#cb47-195" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeUnits`</span>: e.g. "yr AD", "yr BP" or "ka"</span>
+<span id="cb47-196"><a href="#cb47-196" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDatum`</span>: the year CE of time zero (0 for CE, 1950 for BP)</span>
+<span id="cb47-197"><a href="#cb47-197" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeDirection`</span>: "prograde" if time counts forward (year CE), "retrograde" if it counts back (yr BP)</span>
+<span id="cb47-198"><a href="#cb47-198" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`timeExponent`</span>: 0 for years, 3 for ka (thousands of years)</span>
 <span id="cb47-199"><a href="#cb47-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-200"><a href="#cb47-200" aria-hidden="true" tabindex="-1"></a><span class="in">```{r time-meta}</span></span>
-<span id="cb47-201"><a href="#cb47-201" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-202"><a href="#cb47-202" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span>
-<span id="cb47-203"><a href="#cb47-203" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-204"><a href="#cb47-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-205"><a href="#cb47-205" aria-hidden="true" tabindex="-1"></a>Those few "assumed" records have time units that lipdR doesn't recognize (for example "count/yr"), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it's worth checking.</span>
+<span id="cb47-200"><a href="#cb47-200" aria-hidden="true" tabindex="-1"></a><span class="in">`extractTs()`</span> also gives every timeseries a <span class="in">`time`</span> column: a copy of its primary time column, which <span class="in">`timeVariableName`</span> names (usually <span class="in">`age`</span> or <span class="in">`year`</span>). <span class="in">`timeSource`</span> says how its scale is known: from the file's metadata, from its units, or "assumed" when the units don't say.</span>
+<span id="cb47-201"><a href="#cb47-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-202"><a href="#cb47-202" aria-hidden="true" tabindex="-1"></a><span class="in">```{r time-meta}</span></span>
+<span id="cb47-203"><a href="#cb47-203" aria-hidden="true" tabindex="-1"></a>h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-204"><a href="#cb47-204" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeVariableName, timeUnits, timeDatum, timeDirection, timeExponent, timeSource)</span>
+<span id="cb47-205"><a href="#cb47-205" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-206"><a href="#cb47-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-207"><a href="#cb47-207" aria-hidden="true" tabindex="-1"></a>With this information, lipdR converts between any two scales. <span class="in">`convertTime()`</span> converts numbers:</span>
+<span id="cb47-207"><a href="#cb47-207" aria-hidden="true" tabindex="-1"></a>Those few "assumed" records have time units that lipdR doesn't recognize (for example "count/yr"), so it guessed year CE from the column name. That guess is right for all of them, but when it happens, lipdR warns once, and it's worth checking.</span>
 <span id="cb47-208"><a href="#cb47-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-209"><a href="#cb47-209" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-time}</span></span>
-<span id="cb47-210"><a href="#cb47-210" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
-<span id="cb47-211"><a href="#cb47-211" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
-<span id="cb47-212"><a href="#cb47-212" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-213"><a href="#cb47-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-214"><a href="#cb47-214" aria-hidden="true" tabindex="-1"></a>and <span class="in">`convertTsTime()`</span> converts the <span class="in">`time`</span> of every record, and updates the metadata:</span>
+<span id="cb47-209"><a href="#cb47-209" aria-hidden="true" tabindex="-1"></a>With this information, lipdR converts between any two scales. <span class="in">`convertTime()`</span> converts numbers:</span>
+<span id="cb47-210"><a href="#cb47-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-211"><a href="#cb47-211" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-time}</span></span>
+<span id="cb47-212"><a href="#cb47-212" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">1950</span>), <span class="at">from =</span> <span class="st">"yr BP"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
+<span id="cb47-213"><a href="#cb47-213" aria-hidden="true" tabindex="-1"></a><span class="fu">convertTime</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">4.2</span>), <span class="at">from =</span> <span class="st">"ka"</span>, <span class="at">to =</span> <span class="st">"CE"</span>)</span>
+<span id="cb47-214"><a href="#cb47-214" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-215"><a href="#cb47-215" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-216"><a href="#cb47-216" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-ts-time}</span></span>
-<span id="cb47-217"><a href="#cb47-217" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
-<span id="cb47-218"><a href="#cb47-218" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb47-219"><a href="#cb47-219" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span>
-<span id="cb47-220"><a href="#cb47-220" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-221"><a href="#cb47-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-222"><a href="#cb47-222" aria-hidden="true" tabindex="-1"></a>The original <span class="in">`age`</span> and <span class="in">`year`</span> columns stay as they were. lipdViz, compositeR and actR all read <span class="in">`time`</span> and its scale, so you usually don't need to convert anything yourself: you tell each function which scale you want with <span class="in">`time.units`</span>. They also take <span class="in">`time.variable`</span>, to use another time column, such as <span class="in">`age`</span> when <span class="in">`time`</span> is <span class="in">`year`</span>. <span class="in">`h2kTimeseries()`</span> in <span class="in">`R/helpers.R`</span>, which the later tutorials use, returns every record with <span class="in">`time`</span> in years CE.</span>
+<span id="cb47-216"><a href="#cb47-216" aria-hidden="true" tabindex="-1"></a>and <span class="in">`convertTsTime()`</span> converts the <span class="in">`time`</span> of every record, and updates the metadata:</span>
+<span id="cb47-217"><a href="#cb47-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-218"><a href="#cb47-218" aria-hidden="true" tabindex="-1"></a><span class="in">```{r convert-ts-time}</span></span>
+<span id="cb47-219"><a href="#cb47-219" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="ot">&lt;-</span> <span class="fu">convertTsTime</span>(h2k, <span class="st">"CE"</span>)</span>
+<span id="cb47-220"><a href="#cb47-220" aria-hidden="true" tabindex="-1"></a>h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb47-221"><a href="#cb47-221" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(timeUnits)</span>
+<span id="cb47-222"><a href="#cb47-222" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-223"><a href="#cb47-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-224"><a href="#cb47-224" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
-<span id="cb47-225"><a href="#cb47-225" aria-hidden="true" tabindex="-1"></a><span class="fu">## If you change `time`</span></span>
-<span id="cb47-226"><a href="#cb47-226" aria-hidden="true" tabindex="-1"></a>Because <span class="in">`time`</span> is a copy of its source column, lipdR checks that they still agree. If you edit <span class="in">`time`</span> but not the source column, <span class="in">`getTsTime()`</span> (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (<span class="in">`clipTime()`</span> in <span class="in">`R/helpers.R`</span> clips every column), or set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, which makes <span class="in">`time`</span> its own source. <span class="co">[</span><span class="ot">Tutorial 4</span><span class="co">](04-actR.qmd)</span> does that after binning.</span>
-<span id="cb47-227"><a href="#cb47-227" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb47-228"><a href="#cb47-228" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-229"><a href="#cb47-229" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview plots</span></span>
+<span id="cb47-224"><a href="#cb47-224" aria-hidden="true" tabindex="-1"></a>The original <span class="in">`age`</span> and <span class="in">`year`</span> columns stay as they were. lipdViz, compositeR and actR all read <span class="in">`time`</span> and its scale, so you usually don't need to convert anything yourself: you tell each function which scale you want with <span class="in">`time.units`</span>. They also take <span class="in">`time.variable`</span>, to use another time column, such as <span class="in">`age`</span> when <span class="in">`time`</span> is <span class="in">`year`</span>. <span class="in">`h2kTimeseries()`</span> in <span class="in">`R/helpers.R`</span>, which the later tutorials use, returns every record with <span class="in">`time`</span> in years CE.</span>
+<span id="cb47-225"><a href="#cb47-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-226"><a href="#cb47-226" aria-hidden="true" tabindex="-1"></a>::: callout-note</span>
+<span id="cb47-227"><a href="#cb47-227" aria-hidden="true" tabindex="-1"></a><span class="fu">## If you change `time`</span></span>
+<span id="cb47-228"><a href="#cb47-228" aria-hidden="true" tabindex="-1"></a>Because <span class="in">`time`</span> is a copy of its source column, lipdR checks that they still agree. If you edit <span class="in">`time`</span> but not the source column, <span class="in">`getTsTime()`</span> (and so every package) warns and uses the source column instead. So if you trim or rebin records, change both (<span class="in">`clipTime()`</span> in <span class="in">`R/helpers.R`</span> clips every column), or set <span class="in">`timeVariableName`</span> to <span class="in">`"time"`</span>, which makes <span class="in">`time`</span> its own source. <span class="co">[</span><span class="ot">Tutorial 4</span><span class="co">](04-actR.qmd)</span> does that after binning.</span>
+<span id="cb47-229"><a href="#cb47-229" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb47-230"><a href="#cb47-230" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-231"><a href="#cb47-231" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeAvailabilityTs()`</span> shows how many records cover each time, grouped by archive. It puts every record on the scale given by <span class="in">`time.units`</span>, here years CE:</span>
+<span id="cb47-231"><a href="#cb47-231" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview plots</span></span>
 <span id="cb47-232"><a href="#cb47-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-233"><a href="#cb47-233" aria-hidden="true" tabindex="-1"></a><span class="in">```{r availability}</span></span>
-<span id="cb47-234"><a href="#cb47-234" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span>
-<span id="cb47-235"><a href="#cb47-235" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-236"><a href="#cb47-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-237"><a href="#cb47-237" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> combines the map and the availability plot:</span>
+<span id="cb47-233"><a href="#cb47-233" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeAvailabilityTs()`</span> shows how many records cover each time, grouped by archive. It puts every record on the scale given by <span class="in">`time.units`</span>, here years CE:</span>
+<span id="cb47-234"><a href="#cb47-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-235"><a href="#cb47-235" aria-hidden="true" tabindex="-1"></a><span class="in">```{r availability}</span></span>
+<span id="cb47-236"><a href="#cb47-236" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeAvailabilityTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>)</span>
+<span id="cb47-237"><a href="#cb47-237" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-238"><a href="#cb47-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-239"><a href="#cb47-239" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary, fig.height = 9}</span></span>
-<span id="cb47-240"><a href="#cb47-240" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
-<span id="cb47-241"><a href="#cb47-241" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-242"><a href="#cb47-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-243"><a href="#cb47-243" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> draws the figure as it runs. We assign the result so R doesn't also print a description of it.</span>
+<span id="cb47-239"><a href="#cb47-239" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> combines the map and the availability plot:</span>
+<span id="cb47-240"><a href="#cb47-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-241"><a href="#cb47-241" aria-hidden="true" tabindex="-1"></a><span class="in">```{r summary, fig.height = 9}</span></span>
+<span id="cb47-242"><a href="#cb47-242" aria-hidden="true" tabindex="-1"></a>summary_plot <span class="ot">&lt;-</span> <span class="fu">plotSummaryTs</span>(h2k, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">age.range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2020</span>), <span class="at">step =</span> <span class="dv">10</span>, <span class="at">size =</span> <span class="dv">3</span>)</span>
+<span id="cb47-243"><a href="#cb47-243" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-244"><a href="#cb47-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-245"><a href="#cb47-245" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot one record</span></span>
+<span id="cb47-245"><a href="#cb47-245" aria-hidden="true" tabindex="-1"></a><span class="in">`plotSummaryTs()`</span> draws the figure as it runs. We assign the result so R doesn't also print a description of it.</span>
 <span id="cb47-246"><a href="#cb47-246" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-247"><a href="#cb47-247" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTs()`</span> plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:</span>
+<span id="cb47-247"><a href="#cb47-247" aria-hidden="true" tabindex="-1"></a><span class="fu">## Plot one record</span></span>
 <span id="cb47-248"><a href="#cb47-248" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-249"><a href="#cb47-249" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-ts}</span></span>
-<span id="cb47-250"><a href="#cb47-250" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
-<span id="cb47-251"><a href="#cb47-251" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
-<span id="cb47-252"><a href="#cb47-252" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-253"><a href="#cb47-253" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb47-254"><a href="#cb47-254" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-255"><a href="#cb47-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-256"><a href="#cb47-256" aria-hidden="true" tabindex="-1"></a>It returns a ggplot2 object, so you can change the labels or theme as usual.</span>
+<span id="cb47-249"><a href="#cb47-249" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTs()`</span> plots a single timeseries, on its own time scale by default. Here is a lake record dated in yr BP, plotted in years CE with yr BP as a second axis:</span>
+<span id="cb47-250"><a href="#cb47-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-251"><a href="#cb47-251" aria-hidden="true" tabindex="-1"></a><span class="in">```{r plot-ts}</span></span>
+<span id="cb47-252"><a href="#cb47-252" aria-hidden="true" tabindex="-1"></a>rec <span class="ot">&lt;-</span> h2k <span class="sc">|&gt;</span></span>
+<span id="cb47-253"><a href="#cb47-253" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(dataSetName <span class="sc">==</span> <span class="st">"Abbott.Hiner.2016"</span>, paleoData_variableName <span class="sc">==</span> <span class="st">"%sand"</span>)</span>
+<span id="cb47-254"><a href="#cb47-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-255"><a href="#cb47-255" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTs</span>(rec, <span class="at">time.units =</span> <span class="st">"CE"</span>, <span class="at">secondary.axis =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-256"><a href="#cb47-256" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-257"><a href="#cb47-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-258"><a href="#cb47-258" aria-hidden="true" tabindex="-1"></a><span class="fu">## Stacked timeseries plots</span></span>
+<span id="cb47-258"><a href="#cb47-258" aria-hidden="true" tabindex="-1"></a>It returns a ggplot2 object, so you can change the labels or theme as usual.</span>
 <span id="cb47-259"><a href="#cb47-259" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-260"><a href="#cb47-260" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeseriesStack()`</span> plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with <span class="in">`clipTime()`</span> (from <span class="in">`R/helpers.R`</span>). We use <span class="in">`h2k_ce`</span>, so that every <span class="in">`time`</span> is in years CE. <span class="in">`plotTimeseriesStack()`</span> plots <span class="in">`time`</span> by default, and labels the axis from its scale. Change <span class="in">`region`</span> to any acronym from the table above.</span>
+<span id="cb47-260"><a href="#cb47-260" aria-hidden="true" tabindex="-1"></a><span class="fu">## Stacked timeseries plots</span></span>
 <span id="cb47-261"><a href="#cb47-261" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-262"><a href="#cb47-262" aria-hidden="true" tabindex="-1"></a><span class="in">```{r stack, fig.height = 9}</span></span>
-<span id="cb47-263"><a href="#cb47-263" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
-<span id="cb47-264"><a href="#cb47-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-265"><a href="#cb47-265" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
-<span id="cb47-266"><a href="#cb47-266" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span></span>
-<span id="cb47-267"><a href="#cb47-267" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="sc">!</span><span class="fu">is.na</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-268"><a href="#cb47-268" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-269"><a href="#cb47-269" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-270"><a href="#cb47-270" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
-<span id="cb47-271"><a href="#cb47-271" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
-<span id="cb47-272"><a href="#cb47-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-273"><a href="#cb47-273" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span>
+<span id="cb47-262"><a href="#cb47-262" aria-hidden="true" tabindex="-1"></a><span class="in">`plotTimeseriesStack()`</span> plots many records on a shared time axis, one above the other. It works best with up to about 20 or 30 records, so we narrow things down: records from one region that have a climate interpretation, one per dataset, clipped to the Common Era with <span class="in">`clipTime()`</span> (from <span class="in">`R/helpers.R`</span>). We use <span class="in">`h2k_ce`</span>, so that every <span class="in">`time`</span> is in years CE. <span class="in">`plotTimeseriesStack()`</span> plots <span class="in">`time`</span> by default, and labels the axis from its scale. Change <span class="in">`region`</span> to any acronym from the table above.</span>
+<span id="cb47-263"><a href="#cb47-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-264"><a href="#cb47-264" aria-hidden="true" tabindex="-1"></a><span class="in">```{r stack, fig.height = 9}</span></span>
+<span id="cb47-265"><a href="#cb47-265" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> <span class="st">"WNA"</span></span>
+<span id="cb47-266"><a href="#cb47-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-267"><a href="#cb47-267" aria-hidden="true" tabindex="-1"></a>stack <span class="ot">&lt;-</span> h2k_ce <span class="sc">|&gt;</span></span>
+<span id="cb47-268"><a href="#cb47-268" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ar6_region <span class="sc">==</span> region) <span class="sc">|&gt;</span></span>
+<span id="cb47-269"><a href="#cb47-269" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filterByInterpretation</span>(<span class="sc">!</span><span class="fu">is.na</span>(variable), <span class="at">scope =</span> <span class="st">"climate"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-270"><a href="#cb47-270" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(dataSetName, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-271"><a href="#cb47-271" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clipTime</span>(<span class="dv">0</span>, <span class="dv">2020</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-272"><a href="#cb47-272" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(purrr<span class="sc">::</span><span class="fu">map_int</span>(time, length) <span class="sc">&gt;</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
+<span id="cb47-273"><a href="#cb47-273" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(archiveType)</span>
 <span id="cb47-274"><a href="#cb47-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-275"><a href="#cb47-275" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
-<span id="cb47-276"><a href="#cb47-276" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
-<span id="cb47-277"><a href="#cb47-277" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
-<span id="cb47-278"><a href="#cb47-278" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span>
-<span id="cb47-279"><a href="#cb47-279" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb47-280"><a href="#cb47-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-281"><a href="#cb47-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
+<span id="cb47-275"><a href="#cb47-275" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(stack)</span>
+<span id="cb47-276"><a href="#cb47-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-277"><a href="#cb47-277" aria-hidden="true" tabindex="-1"></a><span class="fu">plotTimeseriesStack</span>(stack,</span>
+<span id="cb47-278"><a href="#cb47-278" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color.var =</span> <span class="st">"archiveType"</span>,</span>
+<span id="cb47-279"><a href="#cb47-279" aria-hidden="true" tabindex="-1"></a>                    <span class="at">lab.size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb47-280"><a href="#cb47-280" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">paste</span>(<span class="st">"Hydroclimate2k records in"</span>, region))</span>
+<span id="cb47-281"><a href="#cb47-281" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb47-282"><a href="#cb47-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-283"><a href="#cb47-283" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Map only one archive type, or color the map by <span class="in">`interpretation1_variable`</span>.</span>
-<span id="cb47-284"><a href="#cb47-284" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByInterpretation()`</span> to find the records interpreted as temperature, and map them. How many have temperature as their primary interpretation (<span class="in">`match = "primary"`</span>)?</span>
-<span id="cb47-285"><a href="#cb47-285" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Pick another AR6 region and make its stack plot.</span>
-<span id="cb47-286"><a href="#cb47-286" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByCompilation()`</span> with a <span class="in">`version`</span> to compare membership between versions.</span>
-<span id="cb47-287"><a href="#cb47-287" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`D[["&lt;dataSetName&gt;"]]`</span> gets one dataset by name. Try <span class="in">`getTables()`</span> on its paleoData to see all its measurement tables.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb47-283"><a href="#cb47-283" aria-hidden="true" tabindex="-1"></a><span class="fu">## Try this</span></span>
+<span id="cb47-284"><a href="#cb47-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-285"><a href="#cb47-285" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Map only one archive type, or color the map by <span class="in">`interpretation1_variable`</span>.</span>
+<span id="cb47-286"><a href="#cb47-286" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByInterpretation()`</span> to find the records interpreted as temperature, and map them. How many have temperature as their primary interpretation (<span class="in">`match = "primary"`</span>)?</span>
+<span id="cb47-287"><a href="#cb47-287" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Pick another AR6 region and make its stack plot.</span>
+<span id="cb47-288"><a href="#cb47-288" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Use <span class="in">`filterByCompilation()`</span> with a <span class="in">`version`</span> to compare membership between versions.</span>
+<span id="cb47-289"><a href="#cb47-289" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`D[["&lt;dataSetName&gt;"]]`</span> gets one dataset by name. Try <span class="in">`getTables()`</span> on its paleoData to see all its measurement tables.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 <footer class="footer">
