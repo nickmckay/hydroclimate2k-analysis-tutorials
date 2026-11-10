@@ -108,7 +108,9 @@ h2k |>
 
 ## Interpretations
 
-An interpretation says what a record is a measure of. Each record can have several, numbered (`interpretation1_variable`, `interpretation2_variable`, ...), and each has a `scope`: **climate** (the climate variable the record reflects), **isotope** (what controls an isotope value, such as the d18O of precipitation) or **environment** (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the `interpretation1_` columns don't tell the whole story.
+An interpretation says what a record is a measure of. Each record can have several, numbered (`interpretation1_variable`, `interpretation2_variable`, ...), and each has a `scope`: **climate** (the climate variable(s) the record reflects, which should usually be a variable that is commonly simulated and exported by a climate model), **isotope** (a standardized description of what controls an isotope value, mostly used by the iso2k project) or **environment** (a more local, often non-climate control, that directly controls proxy variability. Lake productivity, tree growth, lake water isotopes, for example). In **Hydroclimate2k we are only using climate and environment scopes.** 
+
+R appends numbers to interpretations when extracting timeseries, but the order reflects the order in which they came into the LiPD file, which can be informative, but isn't directly connected to interpretation. The climate interpretation is number 1 in some records and number 3 in others, so the `interpretation1_` columns don't tell the whole story.
 
 `getInterpretations()` lists them with one row per interpretation. `variable` is what the record is interpreted as, and `direction` says whether larger values mean more or less of it:
 
