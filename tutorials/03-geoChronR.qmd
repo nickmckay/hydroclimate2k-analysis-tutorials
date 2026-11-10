@@ -29,7 +29,7 @@ library(ggplot2)
 source(here::here("R/helpers.R"))
 checkVersions()
 
-D <- getHydro2k()
+D <- getHydroclimate2k()
 L <- D[["LS08STCR"]]
 L$geo$siteName
 ```

@@ -91,11 +91,12 @@ The tutorial 2 composite has a pronounced dry spell in the mid-1100s. Did a give
 
 `detectExcursion()` compares an **event window** with **reference windows** on either side. An excursion is `n.consecutive` points in the event window beyond `sig.num` standard deviations from the reference mean.
 
-First, prepare the records. As in tutorial 2, choose the WNA moisture records and use `compositeR::interpDirectionSign()` to flip each one so that larger values mean wetter. That way a *negative* excursion always means *drier*.
+First, prepare the records. As in tutorial 2, choose the WNA moisture records with `lipdR::filterByInterpretation()`, and use `compositeR::interpDirectionSign()` to flip each one so that larger values mean wetter. That way a *negative* excursion always means *drier*.
 
 ```{r prepare}
 recs <- h2k |>
-  filter(ar6_region == "WNA", isMoisture(interpretation1_variable)) |>
+  filter(ar6_region == "WNA") |>
+  lipdR::filterByInterpretation(isMoisture(variable), scope = "climate", match = "primary") |>
   mutate(direction = purrr::map_dbl(seq_len(n()), \(i) compositeR::interpDirectionSign(pick(everything())[i, ]))) |>
   filter(!is.na(direction)) |>
   distinct(dataSetName, .keep_all = TRUE) |>

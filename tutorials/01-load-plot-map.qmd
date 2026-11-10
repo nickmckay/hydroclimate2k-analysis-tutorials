@@ -35,10 +35,10 @@ unzip("data/hydroclimate2k0_9_0.zip", exdir = "data/hydroclimate2k0_9_0")
 D <- readLipd("data/hydroclimate2k0_9_0")
 ```
 
-In these tutorials we use `getHydro2k()`, which does all of this once (download, unzip, read) and keeps a fast-loading copy in `data/`:
+In these tutorials we use `getHydroclimate2k()`, which does all of this once (download, unzip, read) and keeps a fast-loading copy in `data/`:
 
 ```{r read}
-D <- getHydro2k()
+D <- getHydroclimate2k()
 length(D)
 ```
 
@@ -96,19 +96,51 @@ h2k |>
   count(archiveType, sort = TRUE)
 ```
 
-What variables and interpretations are there? `interpretation1_variable` is the climate variable the authors interpret the record as, and `interpretation1_direction` says whether larger values mean more or less of it.
+What variables are there?
 
 ```{r variables}
 h2k |>
   count(paleoData_variableName, sort = TRUE) |>
   head(15)
-
-h2k |>
-  count(interpretation1_variable, interpretation1_direction, sort = TRUE) |>
-  head(15)
 ```
 
 `queryTs()` and `filterTs()` select timeseries with a simple expression, for example `filterTs(TS, "archiveType == Speleothem")`. With a tibble, `dplyr::filter()` does the same job, and that is what we use here.
+
+## Interpretations
+
+An interpretation says what a record is a measure of. Each record can have several, numbered (`interpretation1_variable`, `interpretation2_variable`, ...), and each has a `scope`: **climate** (the climate variable the record reflects), **isotope** (what controls an isotope value, such as the d18O of precipitation) or **environment** (a non-climate control, such as lake productivity). The climate interpretation is number 1 in some records and number 3 in others, so the `interpretation1_` columns don't tell the whole story.
+
+`getInterpretations()` lists them with one row per interpretation. `variable` is what the record is interpreted as, and `direction` says whether larger values mean more or less of it:
+
+```{r interpretations}
+interp <- getInterpretations(h2k)
+count(interp, scope)
+
+interp |>
+  filter(scope == "climate") |>
+  count(variable, direction, sort = TRUE) |>
+  head(15)
+```
+
+The vocabulary isn't fully standardized yet ("precipitation", "Precipitation amount", "Precipitation index", ...), which is a curation to-do.
+
+`filterByInterpretation()` selects records by their interpretations. Conditions are checked within one interpretation, so this keeps records with an interpretation that is both precipitation and positive (named arguments match any of their values, ignoring case):
+
+```{r filter-interp-named}
+h2k |>
+  filterByInterpretation(variable = "precipitation", direction = "positive") |>
+  count(archiveType, sort = TRUE)
+```
+
+Unnamed conditions are R expressions, evaluated on the rows of `getInterpretations()`, so you can use any logic. Here `grepl()` catches all the PDSI variants ("PDSI", "scPDSI"), and `scope = "climate"` looks only at climate interpretations (a missing scope counts as climate):
+
+```{r filter-interp-expr}
+h2k |>
+  filterByInterpretation(grepl("pdsi", variable, ignore.case = TRUE), scope = "climate") |>
+  count(archiveType, sort = TRUE)
+```
+
+`match` sets how a record's interpretations combine: `"any"` (the default) keeps a record if any of them matches, `"primary"` only if its top one does (lowest `rank`, or else the lowest number), `"all"` if all of them do, and `"none"` if none does. Tutorials 2 and 4 use `filterByInterpretation()` to choose the records interpreted as moisture.
 
 ## IPCC AR6 regions
 
@@ -231,7 +263,8 @@ It returns a ggplot2 object, so you can change the labels or theme as usual.
 region <- "WNA"
 
 stack <- h2k_ce |>
-  filter(ar6_region == region, !is.na(interpretation1_variable)) |>
+  filter(ar6_region == region) |>
+  filterByInterpretation(!is.na(variable), scope = "climate") |>
   distinct(dataSetName, .keep_all = TRUE) |>
   clipTime(0, 2020) |>
   filter(purrr::map_int(time, length) > 20) |>
@@ -248,6 +281,7 @@ plotTimeseriesStack(stack,
 ## Try this
 
 - Map only one archive type, or color the map by `interpretation1_variable`.
+- Use `filterByInterpretation()` to find the records interpreted as temperature, and map them. How many have temperature as their primary interpretation (`match = "primary"`)?
 - Pick another AR6 region and make its stack plot.
 - Use `filterByCompilation()` with a `version` to compare membership between versions.
 - `D[["<dataSetName>"]]` gets one dataset by name. Try `getTables()` on its paleoData to see all its measurement tables.
