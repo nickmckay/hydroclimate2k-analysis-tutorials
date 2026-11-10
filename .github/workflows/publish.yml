@@ -48,7 +48,7 @@ jobs:
         run: |
           source("R/helpers.R")
           checkVersions()
-          D <- getHydro2k()
+          D <- getHydroclimate2k()
           regions <- getAr6Regions()
         shell: Rscript {0}
 
